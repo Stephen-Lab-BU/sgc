@@ -3,6 +3,7 @@ from numpy.fft import irfft
 from cohlib.sample import gen_complex_cov, sample_complex_normal
 from cohlib.utils import get_freqs, add_zero
 
+# test: delete
 # TODO make this a class!
 def gen_bcn_params(T, Fs=1000, return_freqs=True):
     """"
