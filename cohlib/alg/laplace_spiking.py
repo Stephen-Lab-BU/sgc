@@ -2,7 +2,7 @@ import scipy.optimize as op
 import numpy as np
 mvn = np.random.multivariate_normal
 
-def laplace_approx(data, W, sigmas, pp_params):
+def laplace_approx(data, W, sigmas, pp_params, max_iter=10):
     """
     Args:
         data: (n_units, n_timepts) array of spiking data
@@ -22,7 +22,7 @@ def laplace_approx(data, W, sigmas, pp_params):
 
     Result = op.minimize(fun=cost_func, x0=np.zeros(nf),
                     args=(data, W, sigmas, pp_params),
-                    jac=cost_grad, method='Newton-CG', options={'maxiter':2000, 'disp':False})
+                    jac=cost_grad, method='Newton-CG', options={'maxiter':max_iter, 'disp':False})
                     # jac=cost_grad, method='L-BFGS-B', options={'maxiter':2000, 'disp':False})
 
     z = Result.x
@@ -46,6 +46,7 @@ def laplace_approx(data, W, sigmas, pp_params):
 
 # TODO double check these 
 def cost_func(z, data, W, sigmas, pp_params):
+    data = data.astype(bool)
     C = data.shape[0]
     J = data.shape[1]
     mu = pp_params['mu']
@@ -55,12 +56,14 @@ def cost_func(z, data, W, sigmas, pp_params):
     # lamb_pre = x
     lamb_pre = mu[:,None] + beta[:,None] * x
     cost_pre = (data * lamb_pre - np.log(1 + np.exp(lamb_pre)))
-    cost = cost_pre.sum() - ((z)/sigmas).sum()
+    # cost = cost_pre.sum() - ((z)/sigmas).sum()
+    cost = cost_pre.sum() - ((z**2)/sigmas).sum()
     # cost = cost_pre.sum() 
 
     return -cost
 
 def cost_grad(z, data, W, sigmas, pp_params):
+    data = data.astype(bool)
     C = data.shape[0]
     J = data.shape[1]
     nf = W.shape[1]
@@ -77,7 +80,7 @@ def cost_grad(z, data, W, sigmas, pp_params):
     # g_pre = (np.inner(W.T, diff)).sum(1)
     q = (z) / sigmas    
     g = g_pre - q
-    g = g_pre 
+    # g = g_pre 
 
 
     return -g
@@ -257,7 +260,7 @@ def get_sample_func(v_ests, var_ests):
     return sample_func
 
 
-def fit_model(spikes, W, pp_params_init, sigmas=None, n_iter=10, EM=False, betafix=False):
+def fit_model(spikes, W, pp_params_init, sigmas=None, n_iter=10, EM=False, max_laplace_iter=2000, betafix=False):
     L = spikes.shape[0]
     nf = W.shape[1]
     if sigmas is None:
@@ -285,7 +288,7 @@ def fit_model(spikes, W, pp_params_init, sigmas=None, n_iter=10, EM=False, betaf
                 sigmas_l = sigmas[l,:]
                 # print(sigmas_l)
                 
-                v_est_l, var_est_l = laplace_approx(spikes_l, W, sigmas_l, pp_params)
+                v_est_l, var_est_l = laplace_approx(spikes_l, W, sigmas_l, pp_params, max_iter=max_laplace_iter)
                 v_ests_new[l,:] = v_est_l
                 var_ests_new[l,:] = var_est_l
                 
@@ -332,7 +335,7 @@ def fit_model(spikes, W, pp_params_init, sigmas=None, n_iter=10, EM=False, betaf
         for l in range(L):
             spikes_l = spikes[l,:,:]
             sigmas_l = sigmas[l,:]
-            v_est, var_est = laplace_approx(spikes_l, W, sigmas_l, pp_params); 
+            v_est, var_est = laplace_approx(spikes_l, W, sigmas_l, pp_params, max_iter=max_laplace_iter); 
             v_ests[l,:] = v_est
             var_ests[l,:] = var_est
             

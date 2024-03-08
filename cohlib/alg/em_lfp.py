@@ -1,6 +1,6 @@
 import numpy as np
 
-def fit_model_lfp(lfp_f, snu_init, sigmas=None, n_iter=10, EM=False):
+def fit_model_lfp(lfp_f, snu_init, sigmas=None, num_em_iters=10, EM=False):
     L = lfp_f.shape[0]
     nf = lfp_f.shape[1]
     if sigmas is None:
@@ -17,7 +17,7 @@ def fit_model_lfp(lfp_f, snu_init, sigmas=None, n_iter=10, EM=False):
     v_ests_track = []
     var_ests_track = []
     if EM: 
-        for q in range(n_iter):
+        for q in range(num_em_iters):
             if q % 10 == 0:
                 print(f'EM iter {q}')
             v_ests_new = np.zeros((L, nf), dtype=complex)

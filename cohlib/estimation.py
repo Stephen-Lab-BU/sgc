@@ -1,13 +1,13 @@
 import numpy as np
 
 
-def estimate_coherence(xf,yf, ms=True):
+def estimate_coherence(xf,yf, mag_sq=True):
     """
     Estimate coherence for a single frequency range from observed complex coefs. 
     Args:
-        x: (n_trials,) array of complex coefficients signal 1
-        y: (n_trials,) array of complex coefficients signal 2
-        ms: (bool) optional - return mean-squared coherence 
+        xf: (n_trials,) array of complex coefficients signal 1
+        yf: (n_trials,) array of complex coefficients signal 2
+        mag_sq: (bool) optional - return mean-squared coherence 
     Returns:
         coh: coherence estimate
     """
@@ -16,7 +16,7 @@ def estimate_coherence(xf,yf, ms=True):
     Sxx = xf * xf.conj()
     Syy = yf * yf.conj()
 
-    if ms:
+    if mag_sq:
         num = np.abs(Sxy.mean(0))**2
         denom = Sxx.mean(0).real * Syy.mean(0).real
 
@@ -30,24 +30,24 @@ def estimate_coherence(xf,yf, ms=True):
 
     return coh
 
-def thr_coherence(Z, ms=True):
+def thr_coherence(Gamma, mag_sq=True):
     """
     Calculate theoretical coherence from covariance matrices. 
     Args:
-        Z: (n_freqs, 2, 2) array of complex bcn covariance matrices
+        Gamma: (n_freqs, 2, 2) array of complex bcn covariance matrices
     Returns:
         t_coh: (n_freqs,) array of coherence values
     """
 
-    if ms:
-        num = np.abs(Z[:,0,1])**2
-        a = np.abs(Z[:,0,0])
-        b = np.abs(Z[:,1,1])
+    if mag_sq:
+        num = np.abs(Gamma[:,0,1])**2
+        a = np.abs(Gamma[:,0,0])
+        b = np.abs(Gamma[:,1,1])
 
     else:
-        num = np.abs(Z[:,0,1])
-        a = np.abs(Z[:,0,0])
-        b = np.abs(Z[:,1,1])
+        num = np.abs(Gamma[:,0,1])
+        a = np.abs(Gamma[:,0,0])
+        b = np.abs(Gamma[:,1,1])
         a, b = np.sqrt(a), np.sqrt(b)
 
     denom = a*b

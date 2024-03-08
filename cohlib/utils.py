@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 from scipy.fft import rfftfreq
 
 def conv_complex_to_real(c):
@@ -21,3 +22,12 @@ def add_zero(x_F, axis=1):
     zeros = np.repeat(zero, n_trials)
     new_x_F = np.concatenate([zeros[:,None], x_F], axis=axis)
     return new_x_F
+
+def pickle_open(file):
+    with open(file, 'rb') as handle:
+        data = pickle.load(handle)
+    return data
+
+def pickle_save(data, save_name):
+    with open(save_name, 'wb') as handle:
+        pickle.dump(data, handle)

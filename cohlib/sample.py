@@ -10,9 +10,8 @@ def sample_complex_normal(cov, n):
     
     return sample
 
-def gen_complex_cov(d):
-    d = 2
-    A = np.random.randn(d,d) + 1j*np.random.randn(d,d)
+def gen_complex_cov(K):
+    A = np.random.randn(K,K) + 1j*np.random.randn(K,K)
     R = np.conj(A).T @ A
     
     return R

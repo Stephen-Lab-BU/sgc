@@ -2,17 +2,12 @@ Metadata-Version: 2.1
 Name: cohlib
 Version: 0.0.1
 Summary: Resources for spike field coherence
-Home-page: UNKNOWN
 Author: John Tauber
 Author-email: jtauber@mit.edu
 License: LICENSE
-Platform: UNKNOWN
 Classifier: Intended Audience :: Me
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Programming Language :: Python :: 3.7
 Classifier: Operating System :: POSIX :: Linux
 Classifier: Operating System :: MacOS
 Description-Content-Type: text/markdown
-
-UNKNOWN
-
