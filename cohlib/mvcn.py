@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.fft import irfft
 from cohlib.sample import gen_complex_cov, sample_complex_normal
-from cohlib.utils import get_freqs, add_zero
+from cohlib.utils import get_freqs, add_zero, conv_z_to_v
 
 def sample_zs_from_Gamma(Gamma, L):
     """Draw L samples from bcn distribution with covariances Z.
@@ -18,10 +18,9 @@ def sample_zs_from_Gamma(Gamma, L):
 
     return z_draws
 
-# TODO generalize to gen_mcn_params (multivariate instead of bivariate)
-def gen_mvcn_params(T, K, Fs=1000, return_freqs=True):
+def gen_random_mvcn_params(T, Fs, K, return_freqs=True):
     """"
-    Generate (random) bivariate cc complex normal covariances.
+    Generate (random) multivariate cc complex normal covariances.
     Args:
         T: time in seconds
         Fs: sampling frequency (in seconds; default 1000)
@@ -41,7 +40,6 @@ def gen_mvcn_params(T, K, Fs=1000, return_freqs=True):
         return Gamma
 
 
-
 def sample_from_Z(Z, L):
     """Draw L samples from bcn distribution with covariances Z.
     Args:
@@ -57,6 +55,39 @@ def sample_from_Z(Z, L):
 
     return z_draws
 
+def sample_mvcn_time_obs(Gamma, L, freqs, Wv, dc, return_all=True, support_filt=None):
+    K = Gamma.shape[1]
+    J = freqs.size
+    zs = np.zeros((L,K,J+1),dtype=complex)
+    zs[:,:,0] = dc[None,:]
+    if Gamma.shape[0] != J:
+        num_freqs_Gamma = Gamma.shape[0]
+        band_samples = sample_zs_from_Gamma(Gamma, L)
+        support_filt_dc = np.zeros(J+1).astype(bool)
+
+        if support_filt is None:
+            support_filt_dc[1:num_freqs_Gamma+1] = True
+        else:
+            support_filt_dc[1:] = support_filt
+
+        zs[:,:,support_filt_dc] = band_samples
+
+    else:
+        samples = sample_zs_from_Gamma(Gamma, L)
+        zs[:,:,1:] = samples
+
+    vs = conv_z_to_v(zs,axis=2)
+
+    xs = np.einsum('ij,abj->abi', Wv, vs)
+
+    if return_all:
+        return xs, vs, zs
+    else:
+        return xs
+
+# NOTE for backwards compatability
+def gen_bcn_params(T, Fs=1000, K=2, return_freqs=True):
+    return gen_random_mvcn_params(T, Fs, K, return_freqs=True)
 def sample_bcn_time_obs(Gamma, L, return_zs=False, norm='ortho'):
     z_samples = sample_zs_from_Gamma(Gamma, L)
     x_F = z_samples[:,0,:]

@@ -1,6 +1,18 @@
 import math
 import numpy as np
 
+def sample_spikes_from_xs(lams, C, group_axis=1):
+    sampler = _c_sample_func(C)
+    samples = np.apply_along_axis(sampler, group_axis, lams)
+    return samples
+
+def _c_sample_func(C):
+    def func(x):
+        reps = np.tile(x, C).reshape(C,-1)
+        samples = np.random.binomial(1, reps)
+        return samples
+    return func
+
 def sample_complex_normal(cov, n):
     m = cov.shape[0]
     L = np.linalg.cholesky(cov)
