@@ -1,5 +1,8 @@
 import math
 import numpy as np
+from numpy.random import multivariate_normal as mvn
+
+from cohlib.alg.em_sgc import transform_cov_c2r
 
 def sample_spikes_from_xs(lams, C, group_axis=1):
     sampler = _c_sample_func(C)
@@ -14,6 +17,15 @@ def _c_sample_func(C):
     return func
 
 def sample_complex_normal(cov, n):
+    rcov = transform_cov_c2r(cov)
+    rdim = rcov.shape[0]
+    rhalfdim = int(rdim/2)
+    zr_samps = mvn(np.zeros(rdim), rcov, n)
+    zc_samples = zr_samps[:,:rhalfdim] + zr_samps[:,rhalfdim:]*1j
+
+    return zc_samples.swapaxes(0,1)
+
+def sample_complex_normal_dep(cov, n):
     m = cov.shape[0]
     L = np.linalg.cholesky(cov)
     temp = np.random.randn(m,n) + 1j*np.random.randn(m,n)

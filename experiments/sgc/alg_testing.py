@@ -1,126 +1,104 @@
+import argparse
+import os
+
 import numpy as np
-from cohlib.utils import pickle_open
-from cohlib.alg.laplace_sgc import SpikeTrial, TrialData
 
-from cohlib.utils import conv_complex_to_real
+from cohlib.alg.em_sgc import fit_sgc_model, construct_Gamma_full_real_dc
+from cohlib.alg.transform import construct_real_idft_mod
 
-def conv_zs_to_vs(zs, dc=False):
-    L = zs.shape[0]
-    J = zs.shape[1]
-    if dc:
-        vs = np.zeros((L, int(J*2))+1)
-        vs[:,0] = zs[:,zs[0].real]
-        dcshift = 1
+from cohlib.utils import pickle_save, pickle_open, get_dcval, conv_v_to_z
+
+
+# variables we would like to be able to set through CLI:
+def run():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('sample_length', type=int, default=500)
+    parser.add_argument('L', type=int, default=30)
+    parser.add_argument('K', type=int, default=2)
+    parser.add_argument('C', type=int, default=25)
+    parser.add_argument('mu', nargs='?', type=float, default=-3.5)
+    parser.add_argument('num_em', nargs='?', type=int, default=10)
+    parser.add_argument('seed', nargs='?', type=int, default=8)
+    args = parser.parse_args()
+
+    sample_length = args.sample_length # sample length (was slen in notebook)
+    seed = args.seed
+    L = args.L
+    C = args.C
+    K = args.K
+    mu = args.mu
+    num_em = args.num_em
+
+    load_path = f'saved/synthetic_data/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}'
+    print(f"Fitting Synthetic SGC data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, seed: {seed}")
+    save_path = f'saved/fitted_models/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}_fitted'
+
+    data_load = pickle_open(load_path)
+
+    data_load['meta'].keys()
+    Gamma_true = data_load['latent']['Gamma']
+    Wv = data_load['meta']['Wv']
+    fs = data_load['meta']['fs']
+    # freqs = data_load['meta']['freqs']
+    # vs = data_load['latent']['vs']
+    zs = data_load['latent']['zs']
+
+    spikes = data_load['observed']['spikes']
+    # freqs = data_load['meta']['freqs']
+
+    sample_length = spikes.shape[3]
+    J_orig = int(sample_length / 2)
+    # J_orig = int((Wv.shape[1] - 1) / 2)
+    J_new = J_orig - 451
+
+    Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
+
+    dc_val = get_dcval(mu, J_orig, 'real')
+    dc_init = np.diag(1/np.array([dc_val**2 for k in range(K)]))
+    q = 5
+    num_J_vars = Wv.shape[1]
+    J = int((num_J_vars-1)/2)
+    Gamma_inv_init = np.eye(K*num_J_vars)*q
+
+    # for k in range(K):
+    #     Gamma_inv_init[k,k] = dc_init[k,k]
+
+
+
+    Gamma_true_inv = np.stack([np.linalg.inv(Gamma_true[j,:,:]) for j in range(J)])
+    # true_init = construct_Gamma_full_real_dc(dc_init, (1/4)*Gamma_true_inv, K, num_J_vars, invert=False)
+    true_init = construct_Gamma_full_real_dc(dc_init, Gamma_true_inv, K, num_J_vars, invert=False)
+
+    # Gamma_est_z = Gamma_est_from_zs(zs)
+    # Gamma_sampletrue_inv = np.stack([np.linalg.inv(Gamma_est_z[j,:,:]) for j in range(J)])
+    # sampletrue_init = construct_Gamma_full_real_dc(dc_init, Gamma_sampletrue_inv, K, num_J_vars, invert=False)
+    
+
+    inits = {
+        # 'Gamma_inv_init': Gamma_inv_init,
+        # 'Gamma_inv_init': sampletrue_init,
+        'Gamma_inv_init': true_init,
+        'mu': mu,
+        'Gamma_true': Gamma_true
+        }
+
+    # spikes_short = spikes[:10,:,:,:]
+    spikes_use = spikes
+    spikes_grouped = [spikes_use[:,:,k,:] for k in range(K)]
+
+    Gamma_est, prev_inv, track = fit_sgc_model(spikes_grouped, Wv, inits, num_em_iters=num_em, 
+                max_approx_iters=50, track=True)
+
+    save_dict = dict(Gamma=Gamma_est, full_inv=prev_inv, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    pickle_save(save_dict, save_path)
+
+def Gamma_est_from_zs(zs, dc=True):
+    if dc is True:
+        zs_outer = np.einsum('ijk,imk->kjmi', zs[:,:,1:], zs[:,:,1:].conj())
     else:
-        vs = np.zeros((L, int(J*2)))
-        dcshift = 0
+        zs_outer = np.einsum('ijk,imk->kjmi', zs, zs.conj())
+    zs_outer_mean = zs_outer.mean(3)
+    return zs_outer_mean
 
-    # temp = []
-    for l in range(L):
-        for j in range(int(J)):
-            ind = j + dcshift
-            z = zs[l,ind]
-            v1,v2 = conv_complex_to_real(z)
-
-            vi = j*2 + dcshift
-            vs[l,vi] = v1
-            vs[l,vi+1] = v2
-            # temp.append(v1)
-            # temp.append(v2)
-
-    # return vs, temp
-    return vs
-L = 25
-sample_length = 1000
-C = 30
-seed = 8
-mu = -3.5
-
-save_path = f'saved/synthetic_data/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}'
-
-data_load = pickle_open(save_path)
-
-pp_params = data_load['observed']['pp_params']
-spikes1 = data_load['observed']['spikes'][0]
-spikes2 = data_load['observed']['spikes'][1]
-
-xns = data_load['latent']['xns']
-xys = data_load['latent']['xys']
-
-xnfs = data_load['latent']['xnfs']
-xyfs = data_load['latent']['xyfs']
-Gamma = data_load['latent']['Gamma']
-true_coh = data_load['meta']['coh_true']
-coh1 = data_load['meta']['coh_direct_est']
-
-freqs = data_load['meta']['freqs']
-spikes1.shape
-spikes1.shape
-
-spikes = [spikes1, spikes2]
-from cohlib.alg.transform import generate_harmonic_dict
-sample_length = data_load['meta']['sample_length']
-fs = data_load['meta']['fs']
-frange = [0, int(fs/2)]
-res = fs/sample_length
-
-W = generate_harmonic_dict(sample_length, fs, res, frange)
-
-
-from cohlib.alg.laplace_sgc import TrialData
-# trial_obj = TrialData(trial_data, gamma_prev_inv, W)
-trial = 0
-K = 2
-trial_spike_objs = []
-trial_data = []
-for k in range(K):
-    data_kl = spikes[k][trial,:,:]
-
-    spk_kl = SpikeTrial(data_kl)
-
-    trial_spike_objs.append(spk_kl)
-    trial_data.append(data_kl)
-
-trial_z1 = conv_zs_to_vs(xnfs[0:1,:]).squeeze()
-trial_z2 = conv_zs_to_vs(xyfs[0:1,:]).squeeze()
-trial_z = np.concatenate([trial_z1, trial_z2])
-# test = trial_data[0].cost_func(trial_z, W)
-trial_z.shape
-
-num_freqs = W.shape[1]
-num_freqs
-
-gamma_prev_inv = np.eye(num_freqs*K) + np.random.randn(num_freqs*K, num_freqs*K)*0.1
-gamma_prev_inv.shape
-gamma_init = np.eye(num_freqs*K)*gamma_prev_inv
-
-# trial_obj = TrialData(trial_spike_objs, np.eye(num_freqs*K)*gamma_prev_inv, W)
-# test = trial_obj.cost_grad()
-# test(trial_z)
-# # spike_trial_obj.cost_func(trial_z1, W)
-# nf = W.shape[1]
-# group_terms = np.array(
-#     [obj.cost_grad(trial_z[k*nf:k*nf + nf], W) 
-#     for k, obj in enumerate(trial_spike_objs)])
-# group_terms
-# group_terms.flatten()
-# testMu, testH = trial_obj.laplace_approx()
-
-
-def get_trial_obj(data, l, W, gamma_prev):
-    trial_data = [group_data[l,:,:] for group_data in data]
-    spike_objs = [SpikeTrial(data) for data in trial_data]
-    trial_obj = TrialData(spike_objs, gamma_prev, W)
-    return trial_obj
-
-spikes_short = [spikes[i][:5,:,:] for i in range(len(spikes))]
-
-test = get_trial_obj(spikes_short, 0, W, np.eye(num_freqs*K)*gamma_prev_inv)
-# test.laplace_approx()
-# fit_sgc_model(data, W, inits, num_em_iters=10, max_approx_iters=10, track=False)
-
-from cohlib.alg.em_sgc import fit_sgc_model
-inits = {'Gamma': gamma_init}
-
-test = fit_sgc_model(spikes_short, W, inits, num_em_iters=2, max_approx_iters=10, track=False)
-
+if __name__=="__main__":
+    run()

@@ -1,5 +1,19 @@
 import numpy as np
 # def get_real_idft(slen, J, fs, res, frange):
+def construct_real_idft_mod(slen, J, J_max, fs):
+    Jv = int(J*2)+2
+    Jv_max = int(J_max*2)+2
+
+    Wv = np.zeros((slen, Jv_max))
+    for t in range(slen):
+        for j in range(J_max+1):
+            Wv[t,2*j] = np.cos((t+1)*np.pi*j/(J+1))
+            Wv[t,2*j+1] = -np.sin(((t+1)*np.pi*j)/(J+1))
+    Wv = Wv * ((2*np.pi)/(J+1))
+    # if k_low == 0:
+    Wv = np.delete(Wv, 1,1)
+    return Wv
+
 def construct_real_idft(slen, J, fs):
     n_elements = slen
 
@@ -10,9 +24,9 @@ def construct_real_idft(slen, J, fs):
     Wv = np.zeros((slen, Jv))
     for t in range(slen):
         for j in range(J+1):
-            Wv[t,2*j] = np.cos(t*np.pi*j/J)
-            Wv[t,2*j+1] = -np.sin((t*np.pi*j)/J)
-    Wv = Wv * (2*np.pi/J)
+            Wv[t,2*j] = np.cos((t+1)*np.pi*j/(J+1))
+            Wv[t,2*j+1] = -np.sin(((t+1)*np.pi*j)/(J+1))
+    Wv = Wv * ((2*np.pi)/(J+1))
     # if k_low == 0:
     Wv = np.delete(Wv, 1,1)
     return Wv

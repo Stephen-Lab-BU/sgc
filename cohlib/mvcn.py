@@ -59,7 +59,9 @@ def sample_mvcn_time_obs(Gamma, L, freqs, Wv, dc, return_all=True, support_filt=
     K = Gamma.shape[1]
     J = freqs.size
     zs = np.zeros((L,K,J+1),dtype=complex)
-    zs[:,:,0] = dc[None,:]
+    # dc_rand = 5*np.random.randn(L,K)
+    # zs[:,:,0] = dc[None,:] + dc_rand
+    zs[:,:,0] = dc[None,:] 
     if Gamma.shape[0] != J:
         num_freqs_Gamma = Gamma.shape[0]
         band_samples = sample_zs_from_Gamma(Gamma, L)
@@ -76,7 +78,7 @@ def sample_mvcn_time_obs(Gamma, L, freqs, Wv, dc, return_all=True, support_filt=
         samples = sample_zs_from_Gamma(Gamma, L)
         zs[:,:,1:] = samples
 
-    vs = conv_z_to_v(zs,axis=2)
+    vs = conv_z_to_v(zs, axis=2, dc=True)
 
     xs = np.einsum('ij,abj->abi', Wv, vs)
 
