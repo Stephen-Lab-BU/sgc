@@ -1,3 +1,8 @@
 *.ipynb_checkpoints
 scratch
+experiments/sgc/saved
+experiments/sgc/saved/*
+experiments/sgc/old
+experiments/sgc/side_ideas
+experiments/gaussian_observations/saved
 __pycache__
