@@ -2,6 +2,7 @@ import argparse
 import os
 
 import numpy as np
+from scipy.signal.windows import dpss
 
 from cohlib.alg.em_sgc import fit_sgc_model, construct_Gamma_full_real_dc
 from cohlib.alg.transform import construct_real_idft_mod
@@ -29,9 +30,9 @@ def run():
     mu = args.mu
     num_em = args.num_em
 
-    load_path = f'saved/synthetic_data/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}'
+    load_path = f'saved/synthetic_data/simple_synthetic_{K}_{L}_{sample_length}_{C}_{mu}_{seed}'
     print(f"Fitting Synthetic SGC data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, seed: {seed}")
-    save_path = f'saved/fitted_models/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}_fitted'
+    save_path = f'saved/fitted_models/simple_synthetic_{K}_{L}_{sample_length}_{C}_{mu}_{seed}_fitted_new'
 
     data_load = pickle_open(load_path)
 
@@ -53,7 +54,7 @@ def run():
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
 
-    dc_val = get_dcval(mu, J_orig, 'real')
+    dc_val = get_dcval(mu, J_orig)
     dc_init = np.diag(1/np.array([dc_val**2 for k in range(K)]))
     q = 5
     num_J_vars = Wv.shape[1]
@@ -75,22 +76,28 @@ def run():
     
 
     inits = {
-        # 'Gamma_inv_init': Gamma_inv_init,
+        'Gamma_inv_init': Gamma_inv_init,
         # 'Gamma_inv_init': sampletrue_init,
-        'Gamma_inv_init': true_init,
+        # 'Gamma_inv_init': true_init,
         'mu': mu,
         'Gamma_true': Gamma_true
         }
 
     # spikes_short = spikes[:10,:,:,:]
     spikes_use = spikes
+    T = spikes.shape[3]
     spikes_grouped = [spikes_use[:,:,k,:] for k in range(K)]
 
-    Gamma_est, prev_inv, track = fit_sgc_model(spikes_grouped, Wv, inits, num_em_iters=num_em, 
+    tapers = None
+    # NW = 2
+    # Kmax = 3
+    # tapers = dpss(sample_length, NW, Kmax).T * 20
+
+    Gamma_est, Gamma_est_tapers, track = fit_sgc_model(spikes_grouped, Wv, inits, tapers, num_em_iters=num_em, 
                 max_approx_iters=50, track=True)
 
-    save_dict = dict(Gamma=Gamma_est, full_inv=prev_inv, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
-    pickle_save(save_dict, save_path)
+    # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    # pickle_save(save_dict, save_path)
 
 def Gamma_est_from_zs(zs, dc=True):
     if dc is True:

@@ -29,11 +29,20 @@ def run():
 
     print(f"Generating Synthetic SGC data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, seed: {seed}")
 
-    save_path = f'saved/synthetic_data/simple_synthetic_{L}_{sample_length}_{C}_{mu}_{seed}'
+    save_path = f'saved/synthetic_data/simple_synthetic_{K}_{L}_{sample_length}_{C}_{mu}_{seed}'
 
     fs = 1000
 
-    latent, meta = construct_latent_and_sample(sample_length, L, fs, K, mu)
+    if K == 2:
+        latent, meta = construct_latent_and_sample_bcn(sample_length, L, fs, K, mu)
+    elif K == 3:
+        latent, meta = construct_latent_and_sample3(sample_length, L, fs, K, mu)
+    elif K == 6:
+        latent, meta = construct_latent_and_sample6(sample_length, L, fs, K, mu)
+    # elif K == 15:
+    #     latent, meta = construct_latent_and_sample15(sample_length, L, fs, K, mu)
+    else:
+        raise NotImplementedError
     xs = latent['xs']
 
     lams = np.apply_along_axis(logistic, 2, xs)
@@ -54,7 +63,94 @@ def run():
     pickle_save(save_dict, save_path)
 
 
-def construct_latent_and_sample(sample_length, L, fs, K, mu):
+def construct_latent_and_sample3(sample_length, L, fs, K, mu):
+    T = sample_length/fs
+    Gamma, freqs = gen_random_mvcn_params(T, fs, K)
+    n_freqs = Gamma.shape[0]
+
+    J = n_freqs
+    for j in range(J):
+        _, eig_vecs = np.linalg.eigh(Gamma[j,:,:])
+        mod_vals = np.array([1000, 1000, 1000])
+        new_mat = eig_vecs @ np.diag(mod_vals) @ eig_vecs.conj().T
+        new_mat = new_mat*1e-3
+        Gamma[j,:,:] = new_mat
+
+    eig_vals, eig_vecs = np.linalg.eigh(Gamma[10,:,:])
+
+    mod_vals = np.array([15000, 3000, 3000])
+
+    Gamma[10,:,:] = eig_vecs @ np.diag(mod_vals) @ eig_vecs.conj().T
+
+    Gamma_reduce = Gamma.copy()
+    Gamma_reduce[100:,:,:] = 0
+    freqs_reduce = freqs
+
+
+
+    # Draw observations from mvcn (in time domain) 
+
+    # TODO refactor for mvcn
+    Wv = construct_real_idft(sample_length, freqs.size, fs)
+    Wv_reduce = Wv
+    # xs, vs, zs = sample_mvcn_time_obs(Gamma_reduce, L, freqs, Wv, dc_vals, return_all=True)
+    # Wv_reduce = construct_real_idft_mod(sample_length, n_freqs, 100, fs)
+    # J_mod = Wv_reduce.shape[1]
+    J_mod = (sample_length/2)
+    dc_vals = np.array([get_dcval(mu, J_mod) for k in range(K)])
+
+    xs, vs, zs = sample_mvcn_time_obs(Gamma_reduce, L, freqs_reduce, Wv_reduce, dc_vals, return_all=True)
+
+    latent = dict(Gamma=Gamma_reduce, xs=xs, vs=vs, zs=zs)
+    meta = dict(freqs=freqs, Wv=Wv_reduce)
+
+    return latent, meta
+
+def construct_latent_and_sample6(sample_length, L, fs, K, mu):
+    T = sample_length/fs
+    Gamma, freqs = gen_random_mvcn_params(T, fs, K)
+    n_freqs = Gamma.shape[0]
+
+    J = n_freqs
+    for j in range(J):
+        _, eig_vecs = np.linalg.eigh(Gamma[j,:,:])
+        mod_vals = np.repeat(1000, K)
+        new_mat = eig_vecs @ np.diag(mod_vals) @ eig_vecs.conj().T
+        new_mat = new_mat*1e-3
+        Gamma[j,:,:] = new_mat
+
+    _, eig_vecs = np.linalg.eigh(Gamma[10,:,:])
+
+    mod_vals = np.array([30000, 2500, 2500, 2500, 2500, 2500])
+
+    Gamma[10,:,:] = eig_vecs @ np.diag(mod_vals) @ eig_vecs.conj().T
+
+    Gamma_reduce = Gamma.copy()
+    Gamma_reduce[100:,:,:] = 0
+    freqs_reduce = freqs
+
+
+
+    # Draw observations from mvcn (in time domain) 
+
+    # TODO refactor for mvcn
+    Wv = construct_real_idft(sample_length, freqs.size, fs)
+    Wv_reduce = Wv
+    # xs, vs, zs = sample_mvcn_time_obs(Gamma_reduce, L, freqs, Wv, dc_vals, return_all=True)
+    # Wv_reduce = construct_real_idft_mod(sample_length, n_freqs, 100, fs)
+    # J_mod = Wv_reduce.shape[1]
+    J_mod = (sample_length/2)
+    dc_vals = np.array([get_dcval(mu, J_mod) for k in range(K)])
+
+    xs, vs, zs = sample_mvcn_time_obs(Gamma_reduce, L, freqs_reduce, Wv_reduce, dc_vals, return_all=True)
+
+    latent = dict(Gamma=Gamma_reduce, xs=xs, vs=vs, zs=zs)
+    meta = dict(freqs=freqs, Wv=Wv_reduce)
+
+    return latent, meta
+
+
+def construct_latent_and_sample_bcn(sample_length, L, fs, K, mu):
     T = sample_length/fs
     Gamma, freqs = gen_random_mvcn_params(T, fs, K)
     n_freqs = Gamma.shape[0]
@@ -104,7 +200,7 @@ def construct_latent_and_sample(sample_length, L, fs, K, mu):
     # Wv_reduce = construct_real_idft_mod(sample_length, n_freqs, 100, fs)
     # J_mod = Wv_reduce.shape[1]
     J_mod = (sample_length/2)
-    dc_vals = np.array([get_dcval(mu, J_mod, 'real') for k in range(K)])
+    dc_vals = np.array([get_dcval(mu, J_mod) for k in range(K)])
 
     xs, vs, zs = sample_mvcn_time_obs(Gamma_reduce, L, freqs_reduce, Wv_reduce, dc_vals, return_all=True)
 
@@ -115,3 +211,4 @@ def construct_latent_and_sample(sample_length, L, fs, K, mu):
 
 if __name__ == "__main__":
     run()
+

@@ -3,7 +3,7 @@ from numpy.fft import irfft
 from cohlib.sample import gen_complex_cov, sample_complex_normal
 from cohlib.utils import get_freqs, add_zero, conv_z_to_v
 
-def sample_zs_from_Gamma(Gamma, L):
+def sample_zs_from_Gamma(Gamma, L, seed=None):
     """Draw L samples from bcn distribution with covariances Z.
     Args:
         Z: (n_freqs, 2, 2), array of complex covs.
@@ -12,7 +12,14 @@ def sample_zs_from_Gamma(Gamma, L):
         z_samples: (L, 2, n_freqs), draws from Z
     """
     n_freqs = Gamma.shape[0]
-    z_list = [sample_complex_normal(Gamma[j,:,:], L) for j in range(n_freqs)]
+    if seed is not None:
+        if np.isscalar(seed):
+            np.random.seed(1)
+            z_list = [sample_complex_normal(Gamma[j,:,:], L) for j in range(n_freqs)]
+        else:
+            raise NotImplementedError
+    else:
+        z_list = [sample_complex_normal(Gamma[j,:,:], L) for j in range(n_freqs)]
     z_join = np.stack(z_list)
     z_draws = np.swapaxes(z_join, 0, 2)
 

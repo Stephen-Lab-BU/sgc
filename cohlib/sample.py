@@ -1,8 +1,10 @@
 import math
 import numpy as np
 from numpy.random import multivariate_normal as mvn
+from cohlib.utils import set_seed
 
 from cohlib.alg.em_sgc import transform_cov_c2r
+
 
 def sample_spikes_from_xs(lams, C, group_axis=1):
     sampler = _c_sample_func(C)
@@ -16,11 +18,20 @@ def _c_sample_func(C):
         return samples
     return func
 
-def sample_complex_normal(cov, n):
+def sample_complex_normal(cov, n, seed=None):
     rcov = transform_cov_c2r(cov)
     rdim = rcov.shape[0]
     rhalfdim = int(rdim/2)
-    zr_samps = mvn(np.zeros(rdim), rcov, n)
+    if seed is not None:
+        if np.isscalar(seed):
+            np.random.seed(seed)
+            zr_samps = mvn(np.zeros(rdim), rcov, n)
+        else:
+            rng = np.random.default_rng(seed)
+            zr_samps = rng.multivariate_normal(np.zeros(rdim), rcov, n)
+    else:
+        zr_samps = mvn(np.zeros(rdim), rcov, n)
+
     zc_samples = zr_samps[:,:rhalfdim] + zr_samps[:,rhalfdim:]*1j
 
     return zc_samples.swapaxes(0,1)
