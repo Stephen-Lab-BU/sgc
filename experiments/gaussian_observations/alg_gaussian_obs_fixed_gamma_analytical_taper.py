@@ -34,11 +34,14 @@ def run():
     ov1 = args.obs_var1
     ov2 = args.obs_var2
     obs_var = ov1 * (10**ov2)
+    NW = 2
+    Kmax = 3
+    tapers = dpss(sample_length, NW, Kmax, sym=False).T
 
     # load_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}'
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
+    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_3_{L}_{sample_length}_1_{mu}_1.0_0.0_8'
     print(f"Fitting Synthetic Gaussian observation data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, obs_var: {ov1}e{ov2}, seed: {seed}")
-    save_path = f'saved/fitted_models/simple_synthetic_gaussian_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
+    save_path = f'saved/fitted_models/simple_synthetic_gaussian_taper_{NW}_{Kmax}_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
 
     # data_load = pickle_open(load_path)
     gamma_load = pickle_open(load_gamma_path)
@@ -81,10 +84,7 @@ def run():
     ys_use = ys
     ys_grouped = [ys_use[:,:,k,:] for k in range(K)]
 
-    tapers = None
-    # NW = 2
-    # Kmax = 3
-    # tapers = dpss(sample_length, NW, Kmax).T * 20
+    # tapers = None
     invQ = np.diag(np.ones(sample_length)*(1/obs_var))
     invQs = [invQ for k in range(K)]
 
@@ -94,8 +94,7 @@ def run():
     Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, etype='analytical', num_em_iters=num_em, 
                 max_approx_iters=0, track=False)
 
-    # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
-    save_dict = dict(ys_Cavg=ys.mean(1), Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
     pickle_save(save_dict, save_path)
 
 def Gamma_est_from_zs(zs, dc=True):

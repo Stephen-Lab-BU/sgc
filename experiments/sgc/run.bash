@@ -1,16 +1,20 @@
-# python generate_synthetic_simple_mvcn_gaussian.py 1000 25 3 10 -1 5 -2
-# python alg_gaussian_obs.py 1000 25 3 10 -1 5 -2
+
+# python generate_synthetic_simple_mvcn_nodc.py 1000 25 2 1 -3.5 7
+# python alg_nodc_fixed_gamma.py 1000 25 2 10 -2.5
 
 
-python alg_gaussian_obs_fixed_gamma.py 1000 25 3 10 -1 1 -2
-# python generate_synthetic_simple_mvcn_gaussian.py 1000 25 3 15 -1 1.0 -2.0
-# for c in 1 10 25 500
-# do 
-#     for o2 in 2 0 -2  
-#     do
-#         python alg_gaussian_obs_fixed_gamma_analytical.py 1000 25 3 $c -1 1 $o2
-#     done
-# done
+# for c in 1 5 10 25 
+for c in 250 500
+do 
+    for mu in -5 -4 -3 -2 -1
+    do 
+        python alg_nodc_fixed_gamma.py 1000 25 2 $c $mu
+    done
+done
+
+# next - calibrate and try same setup as for gaussian... sample length, trials and 3 mus 
+# then run data creation over mus and look at xx xn nn - read lepage / aoi for further ideas 
+
 
 # python run_sgc_sep_est_bcn.py 1000 25 2 30 -3.5
 # python plot_coh_sep_est_bcn.py 1000 25 2 30 -3.5

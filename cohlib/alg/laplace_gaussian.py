@@ -158,13 +158,7 @@ class GaussianTrial():
 
     # TODO reimplement for continuous data
     def taper_data(self, data_avg, taper):
-        x_est = np.log(1/( 1/data_avg-1) );
-        tapered = data_avg.copy()
-        T = data_avg.size
-
-        for t in range(T):
-            if data_avg[t] != 0 and data_avg[t] != 1:
-                tapered[t] = 1/(1 + np.exp( -1* x_est[t] * taper[t]))
+        tapered = data_avg*taper
 
         return tapered
 

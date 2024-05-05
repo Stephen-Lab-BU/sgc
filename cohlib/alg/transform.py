@@ -1,5 +1,5 @@
 import numpy as np
-# def get_real_idft(slen, J, fs, res, frange):
+# TODO add option for DC that applies associated normalization correctly
 def construct_real_idft_mod(slen, J, J_max, fs):
     Jv = int(J*2)+2
     Jv_max = int(J_max*2)+2
@@ -14,7 +14,7 @@ def construct_real_idft_mod(slen, J, J_max, fs):
     Wv = np.delete(Wv, 1,1)
     return Wv
 
-def construct_real_idft(slen, J, fs):
+def construct_real_idft(slen, J, fs, dc=True):
     n_elements = slen
 
     # k_low = int(np.ceil(frange[0]/fs*n_elements))

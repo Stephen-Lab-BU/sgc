@@ -94,6 +94,35 @@ def sample_mvcn_time_obs(Gamma, L, freqs, Wv, dc, return_all=True, support_filt=
     else:
         return xs
 
+def sample_mvcn_time_obs_nodc(Gamma, L, freqs, Wv, return_all=True, support_filt=None):
+    K = Gamma.shape[1]
+    J = freqs.size
+    zs = np.zeros((L,K,J),dtype=complex)
+    # dc_rand = 5*np.random.randn(L,K)
+    # zs[:,:,0] = dc[None,:] + dc_rand
+    if Gamma.shape[0] != J:
+        num_freqs_Gamma = Gamma.shape[0]
+        band_samples = sample_zs_from_Gamma(Gamma, L)
+        support_filt = np.zeros(J).astype(bool)
+
+        if support_filt is None:
+            support_filt[:num_freqs_Gamma] = True
+
+        zs[:,:,support_filt] = band_samples
+
+    else:
+        samples = sample_zs_from_Gamma(Gamma, L)
+        zs = samples
+
+    vs = conv_z_to_v(zs, axis=2, dc=False)
+
+    xs = np.einsum('ij,abj->abi', Wv, vs)
+
+    if return_all:
+        return xs, vs, zs
+    else:
+        return xs
+
 # NOTE for backwards compatability
 def gen_bcn_params(T, Fs=1000, K=2, return_freqs=True):
     return gen_random_mvcn_params(T, Fs, K, return_freqs=True)
@@ -110,3 +139,4 @@ def sample_bcn_time_obs(Gamma, L, return_zs=False, norm='ortho'):
         return x, y, z_samples
     else:
         return x, y
+

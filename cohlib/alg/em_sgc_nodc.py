@@ -2,11 +2,11 @@ import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
-from cohlib.alg.laplace_gaussian import TrialDataGaussian, GaussianTrial
+from cohlib.alg.laplace_sgc_nodc import TrialData, SpikeTrial
 
 from cohlib.utils import est_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False):
+def fit_sgc_model_nodc(data, W, inits, tapers, num_em_iters=10, max_approx_iters=10, track=False):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -18,8 +18,11 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
 
     # inits
     Gamma_inv_init = inits['Gamma_inv_init']
+    alphas = inits['alphas']
 
 
+    # Gamma_prev_inv = Gamma_inv_init
+    # alg
     track_tapers = []
     Gamma_est_tapers = []
     if tapers is None:
@@ -44,32 +47,26 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
                 Gamma_prev_inv = Gamma_inv_init
 
             mus = np.zeros((L,K*num_J_vars))
-            neg_invUpss = np.zeros((L,K*num_J_vars,K*num_J_vars))
+            Ups_invs = np.zeros((L,K*num_J_vars,K*num_J_vars))
 
             for l in range(L):
                 # print(f'Laplace Approx trial {l}')
-                trial = get_gaussian_trial_obj(data, invQs, l, W, Gamma_prev_inv, taper=taper)
-                if etype == 'approx':
-                    mu, neg_invUps = trial.laplace_approx(max_approx_iters)
-                elif etype == 'analytical':
-                    mu, neg_invUps = trial.compute_estep_analytical()
-                else:
-                    raise ValueError
+                # TODO add alpha
+                trial = get_trial_obj(data, l, W, Gamma_prev_inv, alphas, taper=taper)
+                mu, Ups_inv = trial.laplace_approx(max_approx_iters)
 
-                # real reprsentation
                 mus[l,:] = mu
-                neg_invUpss[l,:,:] = neg_invUps
+                Ups_invs[l,:,:] = Ups_inv
 
 
             # M-Step
             print(f'M-Step for EM iter {r+1}')
-            DC_update, Gamma_update_complex = update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars)
+            Gamma_update_complex = update_Gamma_complex(mus, Ups_invs, K, num_J_vars)
 
-            Gamma_prev_inv = construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=True)
-
+            Gamma_prev_inv = construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=True)
 
             if track is True:
-                taper_track_dict = {'gamma':Gamma_update_complex, 'DC':DC_update, 'inv':Gamma_prev_inv, 'mus':mus}
+                taper_track_dict = {'gamma':Gamma_update_complex, 'inv':Gamma_prev_inv, 'mus':mus}
                 track_taper.append(taper_track_dict)
 
         track_tapers.append(track_taper)
@@ -81,9 +78,10 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
     if track is True:
         return Gamma_est, Gamma_est_tapers, track_tapers
     else:
-        return Gamma_est, Gamma_est_tapers, None
+        return Gamma_est, Gamma_est_tapers
 
-def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
+# TODO remove dc or confirm no DC version below working
+def update_Gamma_complex_dc(mus, Ups_invs, K, num_J_vars, dc=True):
     L = mus.shape[0]
     J_nodc = int((num_J_vars-1)/2)
     J = J_nodc 
@@ -94,14 +92,14 @@ def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
     Upss = np.zeros((L,J,K*2,K*2))
 
     for l in range(L):
-        neg_inv_Ups_j_vecs = get_freq_vecs_real_dc(np.diag(neg_invUpss[l,:,:]), K, num_J_vars)
+        Ups_inv_j_vecs = get_freq_vecs_real_dc(np.diag(Ups_invs[l,:,:]), K, num_J_vars)
         mu_js = get_freq_vecs_real_dc(mus[l,:], K,num_J_vars)
 
         DC_mus_outer[l,:,:] = np.outer(mu_js[0], mu_js[0])
-        DC_Upss[l,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[0])
+        DC_Upss[l,:,:] = -np.diag(1/Ups_inv_j_vecs[0])
         for j in range(J):
             mus_outer[l,j,:,:] = np.outer(mu_js[j+1], mu_js[j+1])
-            Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j+1])
+            Upss[l,j,:,:] = -np.diag(1/Ups_inv_j_vecs[j+1])
 
     # enforce circulary symmetry
     k_mask_pre = 1 - np.eye(2)
@@ -132,6 +130,7 @@ def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
 
     return DC_update, Gamma_update_complex
 
+# TODO remove dc or confirm no DC version below working
 def construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=False):
     J = int((num_J_vars-1)/2)
 
@@ -166,14 +165,14 @@ def construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars,
 
 
 
-def get_gaussian_trial_obj(data, invQs, l, W, Gamma_inv_prev, taper):
+# TODO update with alphas
+def get_trial_obj(data, l, W, Gamma_inv_prev, alphas, taper):
     """
-    data is list of length K 
-    each entry is group data (trial x neurons x time)
+    data is list of spike data (trial x neurons x time)
     """
     trial_data = [group_data[l,:,:] for group_data in data]
-    observation_objs = [GaussianTrial(data, invQs[k], taper) for k, data in enumerate(trial_data)]
-    trial_obj = TrialDataGaussian(observation_objs, Gamma_inv_prev, W)
+    spike_objs = [SpikeTrial(data, alphas[k], taper) for k, data in enumerate(trial_data)]
+    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, alphas)
     return trial_obj
 
 
@@ -204,10 +203,10 @@ def get_freq_vecs_real_dc(vec, K, num_J_vars):
     return j_vecs
 
 
-def update_Gamma_complex(mus, neg_invUpss, K, num_J_vars):
+def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
     '''
     mus is (trials x num_J_vars * K)
-    neg_invUps is (trials x num_J_vars * K x num_J_vars * K)
+    Ups_inv is (trials x num_J_vars * K x num_J_vars * K)
     '''
     L = mus.shape[0]
 
@@ -216,11 +215,11 @@ def update_Gamma_complex(mus, neg_invUpss, K, num_J_vars):
     Upss = np.zeros((L,J,K*2,K*2))
     
     for l in range(L):
-        neg_inv_Ups_j_vecs = get_freq_vecs_real(np.diag(neg_invUpss[l,:,:]), K, num_J_vars)
+        Ups_inv_j_vecs = get_freq_vecs_real(np.diag(Ups_invs[l,:,:]), K, num_J_vars)
         mu_js = get_freq_vecs_real(mus[l,:], K,num_J_vars)
         for j in range(J):
             mus_outer[l,j,:,:] = np.outer(mu_js[j], mu_js[j])
-            Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j])
+            Upss[l,j,:,:] = -np.diag(1/Ups_inv_j_vecs[j])
 
     # enforce circulary symmetry
     k_mask_pre = 1 - np.eye(2)
@@ -236,9 +235,6 @@ def update_Gamma_complex(mus, neg_invUpss, K, num_J_vars):
         Gamma_update_complex += Sig_complex
     Gamma_update_complex = Gamma_update_complex / L
 
-    prior = np.eye(K) + 0*1j*np.eye(K)
-    Gamma_update_complex += prior[None,:,:]
-
     return Gamma_update_complex
 
 
@@ -247,7 +243,7 @@ def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False)
     Gamma_full = np.zeros((K*num_J_vars, K*num_J_vars))
     for j in range(J):
         Gamma_n = Gamma_update_complex[j,:,:]
-        if invert == True:
+        if invert is True:
             Gamma_n = np.linalg.inv(Gamma_n)
         Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n),K)
         base_filt = np.zeros(num_J_vars)

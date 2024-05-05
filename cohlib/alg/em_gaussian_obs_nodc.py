@@ -6,7 +6,7 @@ from cohlib.alg.laplace_gaussian import TrialDataGaussian, GaussianTrial
 
 from cohlib.utils import est_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False):
+def fit_gaussian_model_nodc(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -63,13 +63,13 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
 
             # M-Step
             print(f'M-Step for EM iter {r+1}')
-            DC_update, Gamma_update_complex = update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars)
+            Gamma_update_complex = update_Gamma_complex(mus, neg_invUpss, K, num_J_vars)
 
-            Gamma_prev_inv = construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=True)
+            Gamma_prev_inv = construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=True)
 
 
             if track is True:
-                taper_track_dict = {'gamma':Gamma_update_complex, 'DC':DC_update, 'inv':Gamma_prev_inv, 'mus':mus}
+                taper_track_dict = {'gamma':Gamma_update_complex, 'inv':Gamma_prev_inv, 'mus':mus}
                 track_taper.append(taper_track_dict)
 
         track_tapers.append(track_taper)
@@ -82,87 +82,6 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
         return Gamma_est, Gamma_est_tapers, track_tapers
     else:
         return Gamma_est, Gamma_est_tapers, None
-
-def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
-    L = mus.shape[0]
-    J_nodc = int((num_J_vars-1)/2)
-    J = J_nodc 
-
-    DC_mus_outer = np.zeros((L,K,K))
-    DC_Upss = np.zeros((L,K,K))
-    mus_outer = np.zeros((L,J,K*2,K*2))
-    Upss = np.zeros((L,J,K*2,K*2))
-
-    for l in range(L):
-        neg_inv_Ups_j_vecs = get_freq_vecs_real_dc(np.diag(neg_invUpss[l,:,:]), K, num_J_vars)
-        mu_js = get_freq_vecs_real_dc(mus[l,:], K,num_J_vars)
-
-        DC_mus_outer[l,:,:] = np.outer(mu_js[0], mu_js[0])
-        DC_Upss[l,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[0])
-        for j in range(J):
-            mus_outer[l,j,:,:] = np.outer(mu_js[j+1], mu_js[j+1])
-            Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j+1])
-
-    # enforce circulary symmetry
-    k_mask_pre = 1 - np.eye(2)
-    k_mask_inv = block_diag(*[k_mask_pre for k in range(K)])
-    k_mask =  1 - k_mask_inv
-
-    DC_update = np.zeros((K,K))
-    Gamma_update_complex = np.zeros((J,K,K), dtype=complex)
-    for l in range(L):
-        DC = DC_mus_outer[l,:,:] + DC_Upss[l,:,:]
-        Sig_real = mus_outer[l,:,:,:]*k_mask + Upss[l,:,:,:]
-        Sig_complex = np.zeros((J,K,K), dtype=complex)
-
-        for j in range(J):
-            Sig_complex[j,:,:] = est_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
-
-        DC_update += DC
-        Gamma_update_complex += Sig_complex
-    DC_update = DC_update / L
-    DC_update = np.eye(K)*DC_update
-
-    # Gamma_update_complex = (1/4)*Gamma_update_complex 
-
-    
-    # prior = np.eye(K) + 0*1j*np.eye(K)
-    # Gamma_update_complex = (L*Gamma_update_complex + prior[None,:,:]) / (2*K + 2 + L - 2*K - 1)
-    Gamma_update_complex = Gamma_update_complex / L
-
-    return DC_update, Gamma_update_complex
-
-def construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=False):
-    J = int((num_J_vars-1)/2)
-
-
-    Gamma_full = np.zeros((K*num_J_vars, K*num_J_vars))
-    if invert is True:
-        DC_update = np.linalg.inv(DC_update)
-    base_filt = np.zeros(num_J_vars)
-    base_filt[0] = 1
-    j_filt = np.tile(base_filt.astype(bool), K)
-
-    for k in range(K):
-        Gamma_full[j_filt,k*num_J_vars] = DC_update[:,k]
-
-
-
-    for j in range(J):
-        Gamma_n = Gamma_update_complex[j,:,:]
-        if invert is True:
-            Gamma_n = np.linalg.inv(Gamma_n)
-        Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n),K)
-        base_filt = np.zeros(num_J_vars)
-        j_var = int(j*2 + 1)
-        base_filt[j_var:j_var+2] = 1
-        j_filt = np.tile(base_filt.astype(bool), K)
-        # print(j_filt)
-        for k in range(K):
-            kj = int(k*2)
-            Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
-
-    return Gamma_full
 
 
 

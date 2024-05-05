@@ -1,13 +1,13 @@
 import argparse
-import os
 
 import numpy as np
 from scipy.signal.windows import dpss
 
-from cohlib.alg.em_gaussian_obs import fit_gaussian_model, construct_Gamma_full_real_dc
+from cohlib.alg.em_sgc import fit_sgc_model
 from cohlib.alg.transform import construct_real_idft_mod
 
-from cohlib.utils import pickle_save, pickle_open, get_dcval, conv_v_to_z
+from cohlib.utils import pickle_save, pickle_open, logistic
+from cohlib.sample import sample_spikes_from_xs
 
 
 # variables we would like to be able to set through CLI:
@@ -17,10 +17,8 @@ def run():
     parser.add_argument('L', type=int, default=30)
     parser.add_argument('K', type=int, default=2)
     parser.add_argument('C', type=int, default=25)
-    parser.add_argument('mu', nargs='?', type=float, default=-3.5)
-    parser.add_argument('obs_var1', nargs='?', type=float, default=5)
-    parser.add_argument('obs_var2', nargs='?', type=float, default=3)
-    parser.add_argument('num_em', nargs='?', type=int, default=15)
+    parser.add_argument('alpha', nargs='?', type=float, default=-3.5)
+    parser.add_argument('num_em', nargs='?', type=int, default=10)
     parser.add_argument('seed', nargs='?', type=int, default=8)
     args = parser.parse_args()
 
@@ -29,16 +27,12 @@ def run():
     L = args.L
     C = args.C
     K = args.K
-    mu = args.mu
+    alpha = args.alpha
     num_em = args.num_em
-    ov1 = args.obs_var1
-    ov2 = args.obs_var2
-    obs_var = ov1 * (10**ov2)
 
-    # load_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}'
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
-    print(f"Fitting Synthetic Gaussian observation data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, obs_var: {ov1}e{ov2}, seed: {seed}")
-    save_path = f'saved/fitted_models/simple_synthetic_gaussian_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
+    load_gamma_path = f'saved/synthetic_data/simple_synthetic_nodc_{K}_{L}_{sample_length}_1_-3.5_7'
+    print(f"Fitting Synthetic Gaussian observation data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
+    save_path = f'saved/fitted_models/simple_synthetic_dc_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
 
     # data_load = pickle_open(load_path)
     gamma_load = pickle_open(load_gamma_path)
@@ -49,18 +43,21 @@ def run():
     freqs = gamma_load['meta']['freqs']
 
     xs = gamma_load['latent']['xs']
-    xs_rep = np.stack([xs for _ in range(C)]).swapaxes(0,1)
+    alphas = np.array([alpha for k in range(K)])
+    lams = cif_alpha(alphas, xs)
+    spikes = sample_spikes_from_xs(lams, C)
 
-    ys = xs_rep + np.random.randn(*xs_rep.shape)*np.sqrt(obs_var)
 
 
-    sample_length = ys.shape[3]
+    sample_length = spikes.shape[3]
     J_orig = int(sample_length / 2)
     # J_orig = int((Wv.shape[1] - 1) / 2)
     # J_new = J_orig - 451
     J_new = np.where(freqs > 50)[0][0] - 1
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
+    # Wv = Wv[:,1:]
+    # Wv = Wv
 
     q = 5
     num_J_vars = Wv.shape[1]
@@ -73,30 +70,29 @@ def run():
         'Gamma_inv_init': Gamma_inv_init,
         # 'Gamma_inv_init': true_init,
         # 'Gamma_inv_init': sampletrue_init,
-        'mu': mu,
         'Gamma_true': Gamma_true
         }
 
     # spikes_short = spikes[:10,:,:,:]
-    ys_use = ys
-    ys_grouped = [ys_use[:,:,k,:] for k in range(K)]
+    spikes_use = spikes
+    spikes_grouped = [spikes_use[:,:,k,:] for k in range(K)]
 
     tapers = None
     # NW = 2
     # Kmax = 3
     # tapers = dpss(sample_length, NW, Kmax).T * 20
-    invQ = np.diag(np.ones(sample_length)*(1/obs_var))
-    invQs = [invQ for k in range(K)]
 
-    # Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, num_em_iters=num_em, 
-    #             max_approx_iters=50, track=True)
 
-    Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, etype='analytical', num_em_iters=num_em, 
-                max_approx_iters=0, track=False)
+    Gamma_est, Gamma_est_tapers, track = fit_sgc_model(spikes_grouped, Wv, inits, tapers, num_em_iters=num_em, 
+                max_approx_iters=50, track=True)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
-    save_dict = dict(ys_Cavg=ys.mean(1), Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    save_dict = dict(spikes_Cavg=spikes.mean(1), Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
     pickle_save(save_dict, save_path)
+
+def cif_alpha(alphas, xs):
+    pre_lam = alphas[None,:,None] + xs
+    return logistic(pre_lam)
 
 def Gamma_est_from_zs(zs, dc=True):
     if dc is True:
