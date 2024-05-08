@@ -1,12 +1,14 @@
 
-# python generate_synthetic_simple_mvcn_nodc.py 1000 25 2 1 -3.5 7
+# python generate_synthetic_simple_mvcn_nodc.py 1000 25 2 25 -3.5 7
 # python alg_nodc_fixed_gamma.py 1000 25 2 10 -2.5
 
 
-# for c in 1 5 10 25 
-for c in 250 500
+for c in 1 5 10 25 
+# for c in 250 500
 do 
-    for mu in -5 -4 -3 -2 -1
+    # for mu in -5 -4 -3 -2 -1
+#     do 
+    for mu in 0 1 2 3 4 5
     do 
         python alg_nodc_fixed_gamma.py 1000 25 2 $c $mu
     done

@@ -6,12 +6,24 @@ from cohlib.utils import set_seed
 from cohlib.alg.em_sgc import transform_cov_c2r
 
 
-def sample_spikes_from_xs(lams, C, group_axis=1):
-    sampler = _c_sample_func(C)
+def sample_spikes_from_xs(lams, C, group_axis=1, obs_model='bernoulli'):
+    if obs_model == 'bernoulli':
+        sampler = _c_sample_func_bernoulli(C)
+    elif obs_model == 'poisson':
+        sampler = _c_sample_func_poisson(C)
+    else:
+        raise ValueError
     samples = np.apply_along_axis(sampler, group_axis, lams)
     return samples
 
-def _c_sample_func(C):
+def _c_sample_func_poisson(C):
+    def func(x):
+        reps = np.tile(x, C).reshape(C,-1)
+        samples = np.random.poisson(reps)
+        return samples
+    return func
+
+def _c_sample_func_bernoulli(C):
     def func(x):
         reps = np.tile(x, C).reshape(C,-1)
         samples = np.random.binomial(1, reps)

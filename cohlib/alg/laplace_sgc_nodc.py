@@ -3,7 +3,7 @@ from scipy.linalg import block_diag
 import numpy as np
 mvn = np.random.multivariate_normal
 
-class TrialData():
+class TrialDataBernoulli():
     def __init__(self, trial_objs, Gamma_inv_prev, W, alphas):
         self.trial_objs = trial_objs
         self.W = W
@@ -114,7 +114,7 @@ class TrialData():
 
 
 # TODO make ABC for data models
-class SpikeTrial():
+class SpikeTrialBernoulli():
     def __init__(self, data, alpha, taper=None):
         self.data = data
         self.num_neurons = data.shape[0]
