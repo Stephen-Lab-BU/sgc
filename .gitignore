@@ -1,5 +1,6 @@
 *.ipynb_checkpoints
 scratch
+experiments/old
 experiments/sfc
 experiments/sfc/*
 experiments/sgc/saved
