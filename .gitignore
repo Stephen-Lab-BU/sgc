@@ -1,5 +1,11 @@
 *.ipynb_checkpoints
 scratch
+experiments/sgc-poisson/saved
+experiments/sgc-poisson/saved/*
+experiments/sgc-relupoisson/saved
+experiments/sgc-relupoisson/saved/*
+cohlib/alg/deprecated
+cohlib/alg/deprecated/*
 experiments/old
 experiments/sfc
 experiments/sfc/*
