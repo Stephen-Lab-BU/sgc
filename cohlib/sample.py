@@ -1,7 +1,6 @@
 import math
 import numpy as np
 from numpy.random import multivariate_normal as mvn
-from cohlib.utils import set_seed
 
 from cohlib.alg.em_sgc import transform_cov_c2r
 

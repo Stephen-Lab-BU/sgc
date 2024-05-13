@@ -1,7 +1,7 @@
 import numpy as np
-from numpy.fft import irfft
+from numpy.fft import irfft, rfftfreq
 from cohlib.sample import gen_complex_cov, sample_complex_normal
-from cohlib.utils import get_freqs, add_zero, conv_z_to_v
+from cohlib.utils import conv_z_to_v
 
 def sample_zs_from_Gamma(Gamma, L, seed=None):
     """Draw L samples from bcn distribution with covariances Z.
@@ -140,3 +140,77 @@ def sample_bcn_time_obs(Gamma, L, return_zs=False, norm='ortho'):
     else:
         return x, y
 
+
+# TODO test
+def get_freqs(window_size, Fs):
+    """
+    Get frequency values corresponding to Fourier transform.
+    Args:
+        window_size (float): length of window in *seconds*
+        Fs (int): sampling rate
+    """
+    n = int(window_size / (1 / Fs))
+    freqs = rfftfreq(n, d=1 / Fs)
+    return freqs[1:]
+
+def add_zero(x_F, axis=1):
+    zero = np.array([0 + 1j * 0])
+    n_trials = x_F.shape[0]
+    zeros = np.repeat(zero, n_trials)
+    new_x_F = np.concatenate([zeros[:, None], x_F], axis=axis)
+    return new_x_F
+
+
+def estimate_coherence(xf,yf, mag_sq=True):
+    """
+    Estimate coherence for a single frequency range from observed complex coefs. 
+    Args:
+        xf: (n_trials,) array of complex coefficients signal 1
+        yf: (n_trials,) array of complex coefficients signal 2
+        mag_sq: (bool) optional - return mean-squared coherence 
+    Returns:
+        coh: coherence estimate
+    """
+
+    Sxy = xf * yf.conj()
+    Sxx = xf * xf.conj()
+    Syy = yf * yf.conj()
+
+    if mag_sq:
+        num = np.abs(Sxy.mean(0))**2
+        denom = Sxx.mean(0).real * Syy.mean(0).real
+
+    else:
+        num = np.abs(Sxy.mean(0))
+        a = np.sqrt(Sxx.mean(0).real)
+        b = np.sqrt(Syy.mean(0).real)
+        denom = a*b
+
+    coh  = num/denom
+
+    return coh
+
+def thr_coherence(Gamma, mag_sq=True):
+    """
+    Calculate theoretical coherence from covariance matrices. 
+    Args:
+        Gamma: (n_freqs, 2, 2) array of complex bcn covariance matrices
+    Returns:
+        t_coh: (n_freqs,) array of coherence values
+    """
+
+    if mag_sq:
+        num = np.abs(Gamma[:,0,1])**2
+        a = np.abs(Gamma[:,0,0])
+        b = np.abs(Gamma[:,1,1])
+
+    else:
+        num = np.abs(Gamma[:,0,1])
+        a = np.abs(Gamma[:,0,0])
+        b = np.abs(Gamma[:,1,1])
+        a, b = np.sqrt(a), np.sqrt(b)
+
+    denom = a*b
+    t_coh = num/denom
+
+    return t_coh
