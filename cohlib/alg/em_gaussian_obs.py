@@ -4,7 +4,7 @@ from scipy.linalg import block_diag
 
 from cohlib.alg.laplace_gaussian import TrialDataGaussian, GaussianTrial
 
-from cohlib.utils import est_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
+from cohlib.utils import transform_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
 def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False):
     # safety / params
@@ -116,7 +116,7 @@ def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
         Sig_complex = np.zeros((J,K,K), dtype=complex)
 
         for j in range(J):
-            Sig_complex[j,:,:] = est_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
+            Sig_complex[j,:,:] = transform_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
 
         DC_update += DC
         Gamma_update_complex += Sig_complex
@@ -232,7 +232,7 @@ def update_Gamma_complex(mus, neg_invUpss, K, num_J_vars):
         Sig_real = mus_outer[l,:,:,:]*k_mask + Upss[l,:,:,:]
         Sig_complex = np.zeros((J,K,K), dtype=complex)
         for j in range(J):
-            Sig_complex[j,:,:] = est_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
+            Sig_complex[j,:,:] = transform_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
         Gamma_update_complex += Sig_complex
     Gamma_update_complex = Gamma_update_complex / L
 
