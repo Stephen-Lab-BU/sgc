@@ -14,7 +14,7 @@
 #     done
 # done
 
-python alg_nodc_fixed_gamma_poisson.py 1000 25 2 1 -3.5 10 1 100
+python alg_nodc_fixed_gamma_poisson_refac.py 1000 25 2 25 -3.5 10 
 
 # next - calibrate and try same setup as for gaussian... sample length, trials and 3 mus 
 # then run data creation over mus and look at xx xn nn - read lepage / aoi for further ideas 
