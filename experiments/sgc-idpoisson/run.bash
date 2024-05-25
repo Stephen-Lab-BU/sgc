@@ -27,9 +27,9 @@
 win=1000
 L=25
 C=1
-emiter=14
-alpha=0.1
+emiter=25
+alpha=2.5
 K=2
 
-# python generate_synthetic_simple_mvcn_nodc_relupoisson.py $win $L $K $C $alpha
-python alg_nodc_relupoisson_refac.py $win $L $K $C $alpha $emiter
+python generate_synthetic_simple_mvcn_nodc_idpoisson.py $win $L $K $C $alpha
+python alg_nodc_idpoisson_refac.py $win $L $K $C $alpha $emiter

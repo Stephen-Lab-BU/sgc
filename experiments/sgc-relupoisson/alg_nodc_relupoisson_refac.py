@@ -3,7 +3,7 @@ import argparse
 import numpy as np
 from scipy.signal.windows import dpss
 
-from cohlib.alg.em_sgc import fit_sgc_model
+from cohlib.alg.em_sgc import fit_sgc_model, construct_Gamma_full_real
 from cohlib.alg.transform import construct_real_idft_mod
 
 from cohlib.utils import pickle_save, pickle_open, logistic
@@ -31,6 +31,7 @@ def run():
     K = args.K
     alpha = args.alpha
     num_em = args.num_em
+    init_type = 'flat'
 
     if args.rho == 0:
         rho = None
@@ -39,24 +40,24 @@ def run():
         rho = args.rho
         kappa = args.kappa
 
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_relupoisson_{K}_{L}_{sample_length}_25_0.1_8'
+    data_path = f'saved/synthetic_data/simple_synthetic_relupoisson_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
     print(f"Fitting (regularized) poisson data with rho: {rho}, kappa: {kappa}, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
     # save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
-    save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted_test'
+    save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
 
     # data_load = pickle_open(load_path)
-    gamma_load = pickle_open(load_gamma_path)
+    data_load = pickle_open(data_path)
 
-    Gamma_true = gamma_load['latent']['Gamma']
-    Wv = gamma_load['meta']['Wv']
-    fs = gamma_load['meta']['fs']
-    freqs = gamma_load['meta']['freqs']
+    Gamma_true = data_load['latent']['Gamma']
+    Wv = data_load['meta']['Wv']
+    fs = data_load['meta']['fs']
+    freqs = data_load['meta']['freqs']
 
-    xs = gamma_load['latent']['xs']
-    alphas = np.array([alpha for k in range(K)])
+    spikes = data_load['observed']['spikes']
+    # alphas = np.array([alpha for k in range(K)])
 
-    lams = cif_alpha_relu(alphas, xs)
-    spikes = sample_spikes_from_xs(lams, C, obs_model='poisson')
+    # lams = cif_alpha_relu(alphas, xs)a
+    # spikes = sample_spikes_from_xs(lams, C, obs_model='poisson')
 
 
 
@@ -71,12 +72,25 @@ def run():
 
     q = 5
     num_J_vars = Wv.shape[1]
-    Gamma_inv_init = np.eye(K*num_J_vars)*q
+    Gamma_inv_init_flat = np.eye(K*num_J_vars)*q
+
+    zs = data_load['latent']['zs']
+    Gamma_est_z = Gamma_est_from_zs(zs)
+    Gamma_sampletrue_inv = np.stack([np.linalg.inv(Gamma_est_z[j,:,:]) for j in range(J_new)])
+    Gamma_oracle_init = construct_Gamma_full_real(Gamma_sampletrue_inv, K, num_J_vars, invert=False)
+
+    if init_type == 'flat':
+        Gamma_inv_init = Gamma_inv_init_flat
+    elif init_type == 'oracle': 
+        Gamma_inv_init = Gamma_oracle_init
+    else:
+        raise ValueError
 
     # alphas = np.array([alpha for k in range(K)])
     params = [dict(alpha=alpha) for k in range(K)]
     inits = {
         'obs_model': 'poisson-relu',
+        # 'Gamma_inv_init': Gamma_inv_init_flat,
         'Gamma_inv_init': Gamma_inv_init,
         'params':  params,
         'Gamma_true': Gamma_true,
@@ -93,7 +107,7 @@ def run():
                 max_approx_iters=50, track=True)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
-    save_dict = dict(spikes_Cavg=spikes.mean(1), lams=lams, Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
     pickle_save(save_dict, save_path)
 
 def cif_alpha_relu(alphas, xs):

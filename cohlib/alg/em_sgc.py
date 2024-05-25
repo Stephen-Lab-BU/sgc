@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import block_diag
 
-from cohlib.alg.laplace_sgc import TrialData, SpikeTrialPoisson, SpikeTrialPoissonReLU, SpikeTrialBernoulli
+from cohlib.alg.laplace_sgc import TrialData, SpikeTrialPoisson, SpikeTrialPoissonReLU, SpikeTrialPoissonID, SpikeTrialBernoulli
 
 from cohlib.utils import (
     transform_cov_r2c,
@@ -112,6 +112,8 @@ def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model):
         SpikeTrial = SpikeTrialPoisson
     elif obs_model == "poisson-relu":
         SpikeTrial = SpikeTrialPoissonReLU
+    elif obs_model == "poisson-id":
+        SpikeTrial = SpikeTrialPoissonID
     else:
         raise ValueError
     trial_data = [group_data[l, :, :] for group_data in data]

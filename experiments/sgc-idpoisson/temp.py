@@ -42,7 +42,7 @@ def run():
     load_gamma_path = f'saved/synthetic_data/simple_synthetic_relupoisson_{K}_{L}_{sample_length}_25_0.1_8'
     print(f"Fitting (regularized) poisson data with rho: {rho}, kappa: {kappa}, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
     # save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
-    save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted_test'
+    save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
 
     # data_load = pickle_open(load_path)
     gamma_load = pickle_open(load_gamma_path)

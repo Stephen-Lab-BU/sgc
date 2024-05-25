@@ -39,24 +39,26 @@ def run():
         rho = args.rho
         kappa = args.kappa
 
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_relupoisson_{K}_{L}_{sample_length}_25_0.1_8'
+    load_data_path = f'saved/synthetic_data/simple_synthetic_nodc_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
     print(f"Fitting (regularized) poisson data with rho: {rho}, kappa: {kappa}, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
-    # save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
-    save_path = f'saved/fitted_models/simple_synthetic_relupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted_test'
+    # save_path = f'saved/fitted_models/simple_synthetic_nodc_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
+    save_path = f'saved/fitted_models/simple_synthetic_nodc_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
 
     # data_load = pickle_open(load_path)
-    gamma_load = pickle_open(load_gamma_path)
+    data_load = pickle_open(load_data_path)
 
-    Gamma_true = gamma_load['latent']['Gamma']
-    Wv = gamma_load['meta']['Wv']
-    fs = gamma_load['meta']['fs']
-    freqs = gamma_load['meta']['freqs']
+    Gamma_true = data_load['latent']['Gamma']
+    Wv = data_load['meta']['Wv']
+    fs = data_load['meta']['fs']
+    freqs = data_load['meta']['freqs']
 
-    xs = gamma_load['latent']['xs']
-    alphas = np.array([alpha for k in range(K)])
+    # xs = data_load['latent']['xs']
+    # alphas = np.array([alpha for k in range(K)])
 
-    lams = cif_alpha_relu(alphas, xs)
-    spikes = sample_spikes_from_xs(lams, C, obs_model='poisson')
+    # lams = cif_alpha_loglink(alphas, xs)
+    # spikes = sample_spikes_from_xs(lams, C, obs_model='poisson')
+
+    spikes = data_load['observed']['spikes']
 
 
 
@@ -76,7 +78,7 @@ def run():
     # alphas = np.array([alpha for k in range(K)])
     params = [dict(alpha=alpha) for k in range(K)]
     inits = {
-        'obs_model': 'poisson-relu',
+        'obs_model': 'poisson',
         'Gamma_inv_init': Gamma_inv_init,
         'params':  params,
         'Gamma_true': Gamma_true,
@@ -93,13 +95,12 @@ def run():
                 max_approx_iters=50, track=True)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
-    save_dict = dict(spikes_Cavg=spikes.mean(1), lams=lams, Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
     pickle_save(save_dict, save_path)
 
-def cif_alpha_relu(alphas, xs):
-    lams = alphas[None,:,None] + xs
-    lams[lams < 0] = 0
-    return lams
+def cif_alpha_loglink(alphas, xs):
+    pre_lam = alphas[None,:,None] + xs
+    return np.exp(pre_lam)
 
 def Gamma_est_from_zs(zs, dc=True):
     if dc is True:
