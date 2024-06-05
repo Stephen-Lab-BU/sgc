@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 mvn = np.random.multivariate_normal
 
 class TrialData():
-    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model):
+    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model, optim_type):
         self.trial_objs = trial_objs
         self.W = W
         self.num_J_vars = W.shape[1]
@@ -13,12 +13,19 @@ class TrialData():
         self.K = len(trial_objs)
         self.params = params
         self.obs_model = obs_model
+        self.optim_type = optim_type
 
         if self.obs_model == 'poisson':
             self.compute_fisher_info = self.compute_fisher_info_pois
+        if self.obs_model == 'poisson-delta':
+            self.compute_fisher_info = self.compute_fisher_info_pois_delta
         elif self.obs_model == 'poisson-relu':
             self.compute_fisher_info = self.compute_fisher_info_pois_relu
+        elif self.obs_model == 'poisson-relu-delta':
+            self.compute_fisher_info = self.compute_fisher_info_pois_relu
         elif self.obs_model == 'poisson-id':
+            self.compute_fisher_info = self.compute_fisher_info_pois_id
+        elif self.obs_model == 'poisson-id-delta':
             self.compute_fisher_info = self.compute_fisher_info_pois_id
         elif self.obs_model == 'bernoulli':
             self.compute_fisher_info = self.compute_fisher_info_bernoulli
@@ -66,11 +73,16 @@ class TrialData():
 
         init = np.zeros(self.num_J_vars*self.K)
 
-        # NOTE init at 0 gives 0.5 probability at each time point
-        Result = op.minimize(fun=cost_func_optim, x0=init,
-                        # jac=cost_grad_optim, method='BFGS', 
-                        jac=cost_grad_optim, hess=cost_hess_optim, method='Newton-CG', 
-                        options={'maxiter':max_iter, 'disp':False})
+        if self.optim_type == "Newton":
+            Result = op.minimize(fun=cost_func_optim, x0=init,
+                            jac=cost_grad_optim, hess=cost_hess_optim, method='Newton-CG', 
+                            options={'maxiter':max_iter, 'disp':False})
+        elif self.optim_type == "BFGS": 
+            Result = op.minimize(fun=cost_func_optim, x0=init,
+                            jac=cost_grad_optim, method='BFGS', 
+                            options={'maxiter':max_iter, 'disp':False})
+        else:
+            raise NotImplementedError
 
         mu = Result.x
         # return mu
@@ -87,14 +99,31 @@ class TrialData():
         WFkWs = []
         for k in range(self.K):
             v_ests_k = v_ests[k*J:k*J+J]
-            # inner = -self.W @ v_ests_k
-            # F_k1 = np.diag(np.exp(inner) / (1+ np.exp(inner))**2)
 
             x = self.W @ v_ests_k
-            # lamb = 1/(1 + np.exp(-(self.alphas[k] + x)))
-            # F_k = np.diag(lamb*(1-lamb))
             lamb = np.exp(alphas[k] + x)
             F_k = np.diag(lamb)
+
+            WFkW = Cs[k] * self.W.T @ F_k @ self.W
+            WFkWs.append(WFkW)
+        Hessian = -block_diag(*WFkWs) - self.Gamma_inv_prev
+
+        return -Hessian
+
+    def compute_fisher_info_pois_delta(self, v_ests):
+        Cs = [obj.num_neurons for obj in self.trial_objs]
+        alphas = [obj.params['alpha'] for obj in self.trial_objs]
+        J = self.num_J_vars
+        fs = 1000
+        delta = 1/fs
+
+        WFkWs = []
+        for k in range(self.K):
+            v_ests_k = v_ests[k*J:k*J+J]
+
+            x = self.W @ v_ests_k
+            lamb = np.exp(alphas[k] + x)
+            F_k = np.diag(lamb*delta)
 
             WFkW = Cs[k] * self.W.T @ F_k @ self.W
             WFkWs.append(WFkW)
@@ -111,16 +140,13 @@ class TrialData():
         WFkWs = []
         for k in range(self.K):
             v_ests_k = v_ests[k*J:k*J+J]
-            # inner = -self.W @ v_ests_k
-            # F_k1 = np.diag(np.exp(inner) / (1+ np.exp(inner))**2)
-
             x = self.W @ v_ests_k
-            # lamb = 1/(1 + np.exp(-(self.alphas[k] + x)))
-            # F_k = np.diag(lamb*(1-lamb))
+
             lamb = alphas[k] + x
-            lamb[lamb<=0] = np.nan
+            lamb_relu = np.copy(lamb)
+            lamb_relu[lamb_relu<=0] = np.nan
             
-            F_k = np.diag(np.nan_to_num(data_processed[k] / lamb**2))
+            F_k = np.diag(np.nan_to_num(data_processed[k] / lamb_relu**2, nan=0, neginf=0, posinf=0))
 
             WFkW = Cs[k] * self.W.T @ F_k @ self.W
             WFkWs.append(WFkW)
@@ -170,13 +196,14 @@ class TrialData():
         return -Hessian
 
 class SpikeTrial(ABC):
-    def __init__(self, data, params, taper=None):
+    def __init__(self, data, params, taper=None, fs=1000):
         self.data = data
         self.num_neurons = data.shape[0]
         self.window_length = data.shape[1]
         self.data_type = 'spiking'
         self.data_processed = None
         self.params = params
+        self.fs = fs
 
         if taper is None:
             data_avg = data.astype(int).mean(0)
@@ -233,6 +260,35 @@ class SpikeTrialPoisson(SpikeTrial):
 
         return g
 
+class SpikeTrialPoissonDelta(SpikeTrial):
+    def cost_func(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+        lamb_pre = alpha + x + np.log(delta)
+        cost_pre = data * lamb_pre - delta*np.exp(lamb_pre)
+        cost = C*cost_pre.sum()
+
+        return cost
+
+    def cost_grad(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+
+        lamb = np.exp(alpha + x)
+        diff = data - lamb*delta
+        g_pre = C*np.inner(W.T, diff)
+        g = g_pre 
+
+        return g
+
 class SpikeTrialPoissonID(SpikeTrial):
     def cost_func(self, v, W):
         data = self.data_processed
@@ -260,6 +316,39 @@ class SpikeTrialPoissonID(SpikeTrial):
         diff = div - np.ones_like(lamb)
         g_pre = C*np.inner(W.T, diff)
         g = g_pre 
+
+        return g
+
+
+class SpikeTrialDeltaPoissonID(SpikeTrial):
+    def cost_func(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+        lamb = alpha + x
+
+        log_lamb = np.log(lamb)
+        cost_pre = data * (np.log(delta) + log_lamb) - lamb*delta
+        cost = C*cost_pre.sum()
+
+        return cost
+
+    def cost_grad(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+
+        lamb = alpha + x
+        div = data/lamb
+        diff = div - np.ones_like(lamb)*delta
+        g_pre = C*np.inner(W.T, diff)
+        g = g_pre
 
         return g
 
@@ -292,6 +381,41 @@ class SpikeTrialPoissonReLU(SpikeTrial):
         lamb[lamb<=0] = np.nan
         div = np.nan_to_num(data/lamb)
         diff = div - np.ones_like(lamb)
+        g_pre = C*np.inner(W.T, diff)
+        g = g_pre 
+
+        return g
+
+class SpikeTrialDeltaPoissonReLU(SpikeTrial):
+    def cost_func(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+        lamb = alpha + x
+
+        lamb[lamb<=0] = np.nan
+        
+        log_lamb = np.nan_to_num(np.log(lamb), nan=0, neginf=0, posinf=0)
+        cost_pre = data * (np.log(delta) + log_lamb) - lamb*delta
+        cost = C*cost_pre.sum()
+
+        return cost
+
+    def cost_grad(self, v, W):
+        data = self.data_processed
+        C = self.num_neurons
+        alpha = self.params['alpha']
+        delta = 1/self.fs
+
+        x = W @ v
+
+        lamb = alpha + x
+        lamb[lamb<=0] = np.nan
+        div = np.nan_to_num(data/lamb, nan=0, neginf=0, posinf=0)
+        diff = div - np.ones_like(lamb)*delta
         g_pre = C*np.inner(W.T, diff)
         g = g_pre 
 

@@ -1,18 +1,19 @@
 import math
 import numpy as np
 from numpy.random import multivariate_normal as mvn
+import warnings
 
 from cohlib.alg.em_sgc import transform_cov_c2r
 
 
-def sample_spikes_from_xs(lams, C, group_axis=1, obs_model='bernoulli'):
+def sample_spikes_from_xs(lams, C, delta=1, group_axis=1, obs_model='bernoulli'):
     if obs_model == 'bernoulli':
         sampler = _c_sample_func_bernoulli(C)
     elif obs_model == 'poisson':
         sampler = _c_sample_func_poisson(C)
     else:
         raise ValueError
-    samples = np.apply_along_axis(sampler, group_axis, lams)
+    samples = np.apply_along_axis(sampler, group_axis, lams*delta)
     return samples
 
 def _c_sample_func_poisson(C):
@@ -36,16 +37,26 @@ def sample_complex_normal(cov, n, seed=None):
     if seed is not None:
         if np.isscalar(seed):
             np.random.seed(seed)
-            zr_samps = mvn(np.zeros(rdim), rcov, n)
+            zr_samps = _mvn_sample_ignore_warning(rdim, rcov, n)
         else:
             rng = np.random.default_rng(seed)
-            zr_samps = rng.multivariate_normal(np.zeros(rdim), rcov, n)
+            zr_samps = _mvn_sample_ignore_warning(rdim, rcov, n, rng)
     else:
-        zr_samps = mvn(np.zeros(rdim), rcov, n)
+        zr_samps = _mvn_sample_ignore_warning(rdim, rcov, n)
 
     zc_samples = zr_samps[:,:rhalfdim] + zr_samps[:,rhalfdim:]*1j
 
     return zc_samples.swapaxes(0,1)
+
+def _mvn_sample_ignore_warning(rdim, rcov, n, rng=None):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if rng is None:
+            zr_samps = mvn(np.zeros(rdim), rcov, n)
+        else:
+            zr_samps = rng.multivariate_normal(np.zeros(rdim), rcov, n)
+
+    return zr_samps
 
 def sample_complex_normal_dep(cov, n):
     m = cov.shape[0]

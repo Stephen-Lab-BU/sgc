@@ -2,8 +2,12 @@
 scratch
 experiments/sgc-poisson/saved
 experiments/sgc-poisson/saved/*
+experiments/sgc-poisson-delta/saved
+experiments/sgc-poisson-delta/saved/*
 experiments/sgc-relupoisson/saved
 experiments/sgc-relupoisson/saved/*
+experiments/sgc-relupoisson-delta/saved
+experiments/sgc-relupoisson-delta/saved/*
 experiments/sgc-idpoisson/saved
 experiments/sgc-idpoisson/saved/*
 cohlib/alg/deprecated
