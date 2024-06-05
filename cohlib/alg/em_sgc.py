@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.linalg import block_diag
 
-from cohlib.alg.laplace_sgc import TrialData, SpikeTrialPoisson, SpikeTrialPoissonReLU, SpikeTrialPoissonID, SpikeTrialBernoulli
+from cohlib.alg.laplace_sgc import TrialData, SpikeTrialPoisson, SpikeTrialPoissonDelta, SpikeTrialDeltaPoissonReLU, SpikeTrialPoissonReLU, SpikeTrialDeltaPoissonID, SpikeTrialPoissonID, SpikeTrialBernoulli
 
 from cohlib.utils import (
     transform_cov_r2c,
@@ -29,6 +29,9 @@ def fit_sgc_model(
     obs_model = inits["obs_model"]
     rho = inits["rho"]
     kappa = inits["kappa"]
+    optim_type = inits["optim_type"]
+
+    mu_only_update = inits.get('mu_only', False)
 
     track_tapers = []
     Gamma_est_tapers = []
@@ -59,7 +62,7 @@ def fit_sgc_model(
             for l in range(L):
                 # print(f'Laplace Approx trial {l}')
                 trial = get_trial_obj(
-                    data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model
+                    data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model, optim_type=optim_type,
                 )
                 mu, fisher_info = trial.laplace_approx(max_approx_iters)
                 Ups_inv = -fisher_info
@@ -70,16 +73,22 @@ def fit_sgc_model(
             # M-Step
             print(f"M-Step for EM iter {r+1}")
             if rho is None:
-                Gamma_update_complex = update_Gamma_complex(
-                    mus, Ups_invs, K, num_J_vars
-                )
+                if mu_only_update is True:
+                    print('mu-only')
+                    Gamma_update_complex = update_Gamma_complex_mu_only(
+                        mus, K, num_J_vars
+                    )
+                else:
+                    Gamma_update_complex = update_Gamma_complex(
+                        mus, Ups_invs, K, num_J_vars
+                    )
             else:
                 Gamma_update_complex = update_Gamma_complex_regularized(
                     mus, Ups_invs, K, num_J_vars, rho, kappa
                 )
 
             Gamma_prev_inv = construct_Gamma_full_real(
-                Gamma_update_complex, K, num_J_vars, invert=True
+                Gamma_update_complex, K, num_J_vars, invert=True, mu_only=mu_only_update
             )
 
             if track is True:
@@ -102,7 +111,7 @@ def fit_sgc_model(
         return Gamma_est, Gamma_est_tapers
 
 
-def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model):
+def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model, optim_type):
     """
     data is list of spike data (trial x neurons x time)
     """
@@ -110,17 +119,23 @@ def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model):
         SpikeTrial = SpikeTrialBernoulli
     elif obs_model == "poisson":
         SpikeTrial = SpikeTrialPoisson
+    elif obs_model == "poisson-delta":
+        SpikeTrial = SpikeTrialPoissonDelta
     elif obs_model == "poisson-relu":
         SpikeTrial = SpikeTrialPoissonReLU
+    elif obs_model == "poisson-relu-delta":
+        SpikeTrial = SpikeTrialDeltaPoissonReLU
     elif obs_model == "poisson-id":
         SpikeTrial = SpikeTrialPoissonID
+    elif obs_model == "poisson-id-delta":
+        SpikeTrial = SpikeTrialDeltaPoissonID
     else:
         raise ValueError
     trial_data = [group_data[l, :, :] for group_data in data]
     spike_objs = [
         SpikeTrial(data, params[k], taper) for k, data in enumerate(trial_data)
     ]
-    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, params, obs_model)
+    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, params, obs_model, optim_type)
     return trial_obj
 
 
@@ -166,6 +181,41 @@ def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
     Gamma_update_complex = np.zeros((J, K, K), dtype=complex)
     for l in range(L):
         Sig_real = mus_outer[l, :, :, :] * k_mask + Upss[l, :, :, :]
+        Sig_complex = np.zeros((J, K, K), dtype=complex)
+        for j in range(J):
+            Sig_complex[j, :, :] = transform_cov_r2c(
+                rearrange_mat(Sig_real[j, :, :], K)
+            )
+        Gamma_update_complex += Sig_complex
+    Gamma_update_complex = Gamma_update_complex / L
+
+    return Gamma_update_complex
+
+def update_Gamma_complex_mu_only(mus, K, num_J_vars):
+    """
+    M-Step
+
+    mus is (trials x num_J_vars * K)
+    Ups_inv is (trials x num_J_vars * K x num_J_vars * K)
+    """
+    L = mus.shape[0]
+
+    J = int(num_J_vars / 2)
+    mus_outer = np.zeros((L, J, K * 2, K * 2))
+
+    for l in range(L):
+        mu_js = get_freq_vecs_real(mus[l, :], K, num_J_vars)
+        for j in range(J):
+            mus_outer[l, j, :, :] = np.outer(mu_js[j], mu_js[j])
+
+    # enforce circulary symmetry
+    k_mask_pre = 1 - np.eye(2)
+    k_mask_inv = block_diag(*[k_mask_pre for k in range(K)])
+    k_mask = 1 - k_mask_inv
+
+    Gamma_update_complex = np.zeros((J, K, K), dtype=complex)
+    for l in range(L):
+        Sig_real = mus_outer[l, :, :, :] * k_mask 
         Sig_complex = np.zeros((J, K, K), dtype=complex)
         for j in range(J):
             Sig_complex[j, :, :] = transform_cov_r2c(
@@ -222,13 +272,16 @@ def update_Gamma_complex_regularized(mus, Ups_invs, K, num_J_vars, rho, kappa):
     return Gamma_update_complex
 
 
-def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False):
+def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False, mu_only=False):
     J = int(num_J_vars / 2)
     Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
     for j in range(J):
         Gamma_n = Gamma_update_complex[j, :, :]
         if invert is True:
-            Gamma_n = np.linalg.inv(Gamma_n)
+            if mu_only is True:
+                Gamma_n = np.linalg.pinv(Gamma_n)
+            else:
+                Gamma_n = np.linalg.inv(Gamma_n)
         Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n), K)
         base_filt = np.zeros(num_J_vars)
         j_var = int(j * 2)
@@ -242,3 +295,28 @@ def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False)
             )
 
     return Gamma_full
+
+def deconstruct_Gamma_full_real(Gamma_full_real, K, num_J_vars, invert=False):
+    J = int(num_J_vars / 2)
+    # Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
+    # Gamma_real = np.zeros((J,2*K,2*K))
+    Gamma_reduced_real = np.zeros((J, 2*K, 2*K))
+    base_filt = np.zeros(num_J_vars)
+
+    for j in range(J):
+        j_var = int(j*2)
+        base_filt = np.zeros(num_J_vars)
+        base_filt[j_var:j_var+2] = 1
+        j_filt = np.tile(base_filt.astype(bool), K)
+        # print(j_filt)
+
+        for k in range(K):
+            kj = int(k*2)
+            # Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
+            Gamma_reduced_real[j,:,kj:kj+2] = Gamma_full_real[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2]
+
+    Gamma_complex = np.stack([transform_cov_r2c(reverse_rearrange_mat(Gamma_reduced_real[j,:,:],K)) for j in range(J)])
+    if invert == True:
+        Gamma_complex = np.stack([np.linalg.inv(Gamma_complex[j,:,:]) for j in range(J)])
+
+    return Gamma_complex
