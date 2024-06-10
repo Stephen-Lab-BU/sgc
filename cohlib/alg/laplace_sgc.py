@@ -15,18 +15,12 @@ class TrialData():
         self.obs_model = obs_model
         self.optim_type = optim_type
 
-        if self.obs_model == 'poisson':
-            self.compute_fisher_info = self.compute_fisher_info_pois
-        if self.obs_model == 'poisson-delta':
-            self.compute_fisher_info = self.compute_fisher_info_pois_delta
-        elif self.obs_model == 'poisson-relu':
-            self.compute_fisher_info = self.compute_fisher_info_pois_relu
+        if self.obs_model == 'poisson-log-delta':
+            self.compute_fisher_info = self.computer_fisher_info_delta_log_poisson
         elif self.obs_model == 'poisson-relu-delta':
-            self.compute_fisher_info = self.compute_fisher_info_pois_relu
-        elif self.obs_model == 'poisson-id':
-            self.compute_fisher_info = self.compute_fisher_info_pois_id
+            self.compute_fisher_info = self.compute_fisher_info_delta_relu_poisson
         elif self.obs_model == 'poisson-id-delta':
-            self.compute_fisher_info = self.compute_fisher_info_pois_id
+            self.compute_fisher_info = self.compute_fisher_info_delta_id_poisson
         elif self.obs_model == 'bernoulli':
             self.compute_fisher_info = self.compute_fisher_info_bernoulli
         else:
@@ -110,7 +104,7 @@ class TrialData():
 
         return -Hessian
 
-    def compute_fisher_info_pois_delta(self, v_ests):
+    def computer_fisher_info_delta_log_poisson(self, v_ests):
         Cs = [obj.num_neurons for obj in self.trial_objs]
         alphas = [obj.params['alpha'] for obj in self.trial_objs]
         J = self.num_J_vars
@@ -131,7 +125,7 @@ class TrialData():
 
         return -Hessian
 
-    def compute_fisher_info_pois_relu(self, v_ests):
+    def compute_fisher_info_delta_relu_poisson(self, v_ests):
         Cs = [obj.num_neurons for obj in self.trial_objs]
         alphas = [obj.params['alpha'] for obj in self.trial_objs]
         data_processed = [obj.data_processed for obj in self.trial_objs]
@@ -154,7 +148,7 @@ class TrialData():
 
         return -Hessian
 
-    def compute_fisher_info_pois_id(self, v_ests):
+    def compute_fisher_info_delta_id_poisson(self, v_ests):
         Cs = [obj.num_neurons for obj in self.trial_objs]
         alphas = [obj.params['alpha'] for obj in self.trial_objs]
         data_processed = [obj.data_processed for obj in self.trial_objs]
@@ -233,34 +227,8 @@ class SpikeTrial(ABC):
     def cost_grad(self, v, W):
         pass
 
-class SpikeTrialPoisson(SpikeTrial):
-    def cost_func(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
 
-        x = W @ v
-        lamb_pre = alpha + x
-        cost_pre = data * lamb_pre - np.exp(lamb_pre)
-        cost = C*cost_pre.sum()
-
-        return cost
-
-    def cost_grad(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
-
-        x = W @ v
-
-        lamb = np.exp(alpha + x)
-        diff = data - lamb
-        g_pre = C*np.inner(W.T, diff)
-        g = g_pre 
-
-        return g
-
-class SpikeTrialPoissonDelta(SpikeTrial):
+class SpikeTrialDeltaLogPoisson(SpikeTrial):
     def cost_func(self, v, W):
         data = self.data_processed
         C = self.num_neurons
@@ -289,38 +257,9 @@ class SpikeTrialPoissonDelta(SpikeTrial):
 
         return g
 
-class SpikeTrialPoissonID(SpikeTrial):
-    def cost_func(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
-
-        x = W @ v
-        lamb = alpha + x
-
-        log_lamb = np.log(lamb)
-        cost_pre = data * log_lamb - lamb
-        cost = C*cost_pre.sum()
-
-        return cost
-
-    def cost_grad(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
-
-        x = W @ v
-
-        lamb = alpha + x
-        div = data/lamb
-        diff = div - np.ones_like(lamb)
-        g_pre = C*np.inner(W.T, diff)
-        g = g_pre 
-
-        return g
 
 
-class SpikeTrialDeltaPoissonID(SpikeTrial):
+class SpikeTrialDeltaIDPoisson(SpikeTrial):
     def cost_func(self, v, W):
         data = self.data_processed
         C = self.num_neurons
@@ -353,40 +292,7 @@ class SpikeTrialDeltaPoissonID(SpikeTrial):
         return g
 
 
-class SpikeTrialPoissonReLU(SpikeTrial):
-    def cost_func(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
-
-        x = W @ v
-        lamb = alpha + x
-
-        lamb[lamb<=0] = np.nan
-        
-        log_lamb = np.nan_to_num(np.log(lamb))
-        cost_pre = data * log_lamb - lamb
-        cost = C*cost_pre.sum()
-
-        return cost
-
-    def cost_grad(self, v, W):
-        data = self.data_processed
-        C = self.num_neurons
-        alpha = self.params['alpha']
-
-        x = W @ v
-
-        lamb = alpha + x
-        lamb[lamb<=0] = np.nan
-        div = np.nan_to_num(data/lamb)
-        diff = div - np.ones_like(lamb)
-        g_pre = C*np.inner(W.T, diff)
-        g = g_pre 
-
-        return g
-
-class SpikeTrialDeltaPoissonReLU(SpikeTrial):
+class SpikeTrialDeltaReLUPoisson(SpikeTrial):
     def cost_func(self, v, W):
         data = self.data_processed
         C = self.num_neurons
@@ -448,3 +354,97 @@ class SpikeTrialBernoulli(SpikeTrial):
         g = g_pre 
 
         return g
+
+#### DEPRECATED
+# class SpikeTrialPoissonID(SpikeTrial):
+#     def cost_func(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+#         lamb = alpha + x
+
+#         log_lamb = np.log(lamb)
+#         cost_pre = data * log_lamb - lamb
+#         cost = C*cost_pre.sum()
+
+#         return cost
+
+#     def cost_grad(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+
+#         lamb = alpha + x
+#         div = data/lamb
+#         diff = div - np.ones_like(lamb)
+#         g_pre = C*np.inner(W.T, diff)
+#         g = g_pre 
+
+#         return g
+
+
+# class SpikeTrialPoissonReLU(SpikeTrial):
+#     def cost_func(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+#         lamb = alpha + x
+
+#         lamb[lamb<=0] = np.nan
+        
+#         log_lamb = np.nan_to_num(np.log(lamb))
+#         cost_pre = data * log_lamb - lamb
+#         cost = C*cost_pre.sum()
+
+#         return cost
+
+#     def cost_grad(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+
+#         lamb = alpha + x
+#         lamb[lamb<=0] = np.nan
+#         div = np.nan_to_num(data/lamb)
+#         diff = div - np.ones_like(lamb)
+#         g_pre = C*np.inner(W.T, diff)
+#         g = g_pre 
+
+#         return g
+
+
+
+# class SpikeTrialPoisson(SpikeTrial):
+#     def cost_func(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+#         lamb_pre = alpha + x
+#         cost_pre = data * lamb_pre - np.exp(lamb_pre)
+#         cost = C*cost_pre.sum()
+
+#         return cost
+
+#     def cost_grad(self, v, W):
+#         data = self.data_processed
+#         C = self.num_neurons
+#         alpha = self.params['alpha']
+
+#         x = W @ v
+
+#         lamb = np.exp(alpha + x)
+#         diff = data - lamb
+#         g_pre = C*np.inner(W.T, diff)
+#         g = g_pre 
+
+#         return g
