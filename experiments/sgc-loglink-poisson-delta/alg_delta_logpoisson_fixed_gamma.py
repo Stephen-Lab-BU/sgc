@@ -1,12 +1,11 @@
 import argparse
 
 import numpy as np
-from scipy.signal.windows import dpss
 
 from cohlib.alg.em_sgc import fit_sgc_model, construct_Gamma_full_real
 from cohlib.alg.transform import construct_real_idft_mod
 
-from cohlib.utils import pickle_save, pickle_open, logistic
+from cohlib.utils import pickle_save, pickle_open
 from cohlib.sample import sample_spikes_from_xs
 
 
@@ -20,6 +19,7 @@ def run():
     parser.add_argument('alpha', nargs='?', type=float, default=-3.5)
     parser.add_argument('num_em', nargs='?', type=int, default=10)
     parser.add_argument('init_type', nargs='?', type=str, default='flat')
+    parser.add_argument('optim_type', nargs='?', type=str, default='BFGS')
     parser.add_argument('rho', nargs='?', type=int, default=0)
     parser.add_argument('kappa', nargs='?', type=int, default=0)
     parser.add_argument('seed', nargs='?', type=int, default=8)
@@ -33,7 +33,7 @@ def run():
     alpha = args.alpha
     num_em = args.num_em
     init_type = args.init_type
-    optim_type = "Newton"
+    optim_type = args.optim_type
 
     if args.rho == 0:
         rho = None
@@ -45,11 +45,11 @@ def run():
         print(f"Fitting (regularized) poisson data log link. Params - rho: {rho}, kappa: {kappa}, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
     print(f'Using {init_type} init and {optim_type} for optimization.')
 
-    load_data_path = f'saved/synthetic_data/simple_synthetic_nodc_fixed_gamma_{K}_{L}_{sample_length}'
-    save_path = f'saved/fitted_models/simple_synthetic_nodc_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
+    data_path = f'saved/synthetic_data/simple_synthetic_logpoisson_fixed_gamma_{K}_{L}_{sample_length}'
+    save_path = f'saved/fitted_models/simple_synthetic_logpoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_{init_type}_{optim_type}_fitted'
 
     # data_load = pickle_open(load_path)
-    data_load = pickle_open(load_data_path)
+    data_load = pickle_open(data_path)
 
     Gamma_true = data_load['latent']['Gamma']
     Wv = data_load['meta']['Wv']
@@ -92,7 +92,7 @@ def run():
     # alphas = np.array([alpha for k in range(K)])
     params = [dict(alpha=alpha) for k in range(K)]
     inits = {
-        'obs_model': 'poisson-delta',
+        'obs_model': 'poisson-log-delta',
         'optim_type': optim_type,
         'Gamma_inv_init': Gamma_inv_init,
         'params':  params,
@@ -117,7 +117,7 @@ def cif_alpha_loglink(alphas, xs):
     pre_lam = alphas[None,:,None] + xs
     return np.exp(pre_lam)
 
-def Gamma_est_from_zs(zs, dc=True):
+def Gamma_est_from_zs(zs, dc=False):
     if dc is True:
         zs_outer = np.einsum('ijk,imk->kjmi', zs[:,:,1:], zs[:,:,1:].conj())
     else:

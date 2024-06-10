@@ -28,7 +28,8 @@ def run():
 
     print(f"Generating Synthetic SGC Poisson data (no DC) with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
 
-    save_path = f'saved/synthetic_data/simple_synthetic_deltarelupoisson_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
+    # save_path = f'saved/synthetic_data/simple_synthetic_deltarelupoisson_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
+    save_path = f'saved/synthetic_data/simple_synthetic_deltarelupoisson_fixed_gamma_{K}_{L}_{sample_length}'
 
     fs = 1000
 
