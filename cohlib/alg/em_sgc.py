@@ -96,6 +96,7 @@ def fit_sgc_model(
                     "gamma": Gamma_update_complex,
                     "inv": Gamma_prev_inv,
                     "mus": mus,
+                    "Ups_invs": Ups_invs
                 }
                 track_taper.append(taper_track_dict)
 
