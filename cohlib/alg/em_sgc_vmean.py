@@ -103,6 +103,7 @@ def fit_sgc_model(
                     "gamma": Gamma_update_complex,
                     "inv": Gamma_prev_inv,
                     "mus": mus,
+                    "Ups_invs": Ups_invs
                 }
                 track_taper.append(taper_track_dict)
 
@@ -136,10 +137,10 @@ def get_trial_obj(data, l, W, phi_prev, Gamma_inv_prev, params, taper, obs_model
     #     SpikeTrial = SpikeTrialDeltaIDPoisson
     # else:
     #     raise ValueError
-    num_J_vars = W.shape[1]
+    # num_J_vars = W.shape[1]
     trial_data = [group_data[l, :, :] for group_data in data]
     spike_objs = [
-        SpikeTrial(data, params[k], phi_prev[k*num_J_vars:k*num_J_vars+num_J_vars], taper) for k, data in enumerate(trial_data)
+        SpikeTrial(data, params[k], taper) for k, data in enumerate(trial_data)
     ]
     trial_obj = TrialData(spike_objs, phi_prev, Gamma_inv_prev, W, params, obs_model, optim_type)
     return trial_obj
