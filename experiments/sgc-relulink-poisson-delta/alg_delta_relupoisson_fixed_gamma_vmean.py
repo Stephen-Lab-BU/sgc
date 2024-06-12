@@ -2,7 +2,7 @@ import argparse
 
 import numpy as np
 
-from cohlib.alg.em_sgc import fit_sgc_model, construct_Gamma_full_real
+from cohlib.alg.em_sgc_vmean import fit_sgc_model, construct_Gamma_full_real
 from cohlib.alg.transform import construct_real_idft_mod
 
 from cohlib.utils import pickle_save, pickle_open
@@ -38,7 +38,7 @@ def run():
     if args.rho == 0:
         rho = None
         kappa = None
-        print(f"Fitting poisson data with ReLU link, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
+        print(f"Fitting poisson data with ReLU link and phi param, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
     else: 
         rho = args.rho
         kappa = args.kappa
