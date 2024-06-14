@@ -79,7 +79,7 @@ def fit_sgc_model(
                         mus, K, num_J_vars
                     )
                 else:
-                    Gamma_update_complex = update_Gamma_complex(
+                    Gamma_update_complex, Sig_complex = update_Gamma_complex(
                         mus, Ups_invs, K, num_J_vars
                     )
             else:
@@ -96,8 +96,11 @@ def fit_sgc_model(
                     "gamma": Gamma_update_complex,
                     "inv": Gamma_prev_inv,
                     "mus": mus,
-                    "Ups_invs": Ups_invs
+                    "Ups_invs": Ups_invs,
                 }
+                # TODO - clean this up
+                if rho is None and mu_only_update is False:
+                    taper_track_dict['Sig_complex'] = Sig_complex
                 track_taper.append(taper_track_dict)
 
         track_tapers.append(track_taper)
@@ -174,6 +177,7 @@ def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
     k_mask = 1 - k_mask_inv
 
     Gamma_update_complex = np.zeros((J, K, K), dtype=complex)
+    Sigmas_complex = np.zeros((L, J, K, K), dtype=complex)
     for l in range(L):
         Sig_real = mus_outer[l, :, :, :] * k_mask + Upss[l, :, :, :]
         Sig_complex = np.zeros((J, K, K), dtype=complex)
@@ -182,9 +186,11 @@ def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
                 rearrange_mat(Sig_real[j, :, :], K)
             )
         Gamma_update_complex += Sig_complex
+        Sigmas_complex[l,:,:,:] = Sig_complex
+
     Gamma_update_complex = Gamma_update_complex / L
 
-    return Gamma_update_complex
+    return Gamma_update_complex, Sigmas_complex
 
 def update_Gamma_complex_mu_only(mus, K, num_J_vars):
     """
@@ -209,6 +215,7 @@ def update_Gamma_complex_mu_only(mus, K, num_J_vars):
     k_mask = 1 - k_mask_inv
 
     Gamma_update_complex = np.zeros((J, K, K), dtype=complex)
+    Sigmas_complex = np.zeros((L, J, K, K), dtype=complex)
     for l in range(L):
         Sig_real = mus_outer[l, :, :, :] * k_mask 
         Sig_complex = np.zeros((J, K, K), dtype=complex)
@@ -216,10 +223,11 @@ def update_Gamma_complex_mu_only(mus, K, num_J_vars):
             Sig_complex[j, :, :] = transform_cov_r2c(
                 rearrange_mat(Sig_real[j, :, :], K)
             )
+        Sigmas_complex[l,:,:,:] = Sig_complex
         Gamma_update_complex += Sig_complex
     Gamma_update_complex = Gamma_update_complex / L
 
-    return Gamma_update_complex
+    return Gamma_update_complex, Sig_complex
 
 
 def update_Gamma_complex_regularized(mus, Ups_invs, K, num_J_vars, rho, kappa):
