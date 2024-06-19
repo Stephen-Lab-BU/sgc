@@ -25,6 +25,8 @@ def run():
     parser.add_argument('seed', nargs='?', type=int, default=8)
     args = parser.parse_args()
 
+    store_spikes = True
+    print(f'store_spikes: {store_spikes}')
     sample_length = args.sample_length # sample length (was slen in notebook)
     seed = args.seed
     L = args.L
@@ -45,7 +47,7 @@ def run():
         print(f"Fitting (regularized) poisson data ReLU link. Params - rho: {rho}, kappa: {kappa}, L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
     print(f'Using {init_type} init and {optim_type} for optimization.')
 
-    data_path = f'saved/synthetic_data/simple_synthetic_deltarelupoisson_fixed_gamma_{K}_{L}_{sample_length}'
+    data_path = f'saved/synthetic_data/simple_latent_deltarelu_fixed_gamma_{K}_{L}_{sample_length}'
     save_path = f'saved/fitted_models/simple_synthetic_deltarelupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_{init_type}_{optim_type}_fitted'
 
     # data_load = pickle_open(load_path)
@@ -71,7 +73,7 @@ def run():
     J_new = np.where(freqs > 50)[0][0] - 1
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
-    Wv = Wv[:,1:]
+     
 
     q = 5
     num_J_vars = Wv.shape[1]
@@ -110,7 +112,11 @@ def run():
                 max_approx_iters=50, track=True)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
-    save_dict = dict(Gamma=Gamma_est, lams=lams, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    if store_spikes is True:
+        print('spikes stored')
+        save_dict = dict(Gamma=Gamma_est, latent_true=data_load['latent'], spikes=spikes, lams=lams, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    else:
+        save_dict = dict(Gamma=Gamma_est, lams=lams, latent_true=data_load['latent'], tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
     pickle_save(save_dict, save_path)
 
 def cif_alpha_relu(alphas, xs):

@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 mvn = np.random.multivariate_normal
 
 class TrialData():
-    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model, optim_type):
+    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model, optim_type, Gamma_prev_logdet=None):
         self.trial_objs = trial_objs
         self.W = W
         self.num_J_vars = W.shape[1]
@@ -14,6 +14,7 @@ class TrialData():
         self.params = params
         self.obs_model = obs_model
         self.optim_type = optim_type
+        self.Gamma_prev_logdet = Gamma_prev_logdet
 
         if self.obs_model == 'poisson-log-delta':
             self.compute_fisher_info = self.computer_fisher_info_delta_log_poisson
@@ -33,8 +34,13 @@ class TrialData():
                 [obj.cost_func(v[k*Jv:k*Jv + Jv], self.W) 
                 for k, obj in enumerate(self.trial_objs)])
             group_term = group_terms.sum()
-            # prior_term =  v.T @ self.Gamma_inv_prev @ v 
+
+            # prior_const_term = (1/2)*((self.K*Jv)*np.log(2*np.pi) + self.Gamma_prev_logdet) 
+            # prior_v_term = (1/2) * (v.T @ self.Gamma_inv_prev @ v)
+            # prior_term = prior_const_term + prior_v_term
+
             prior_term = (1/2) * (v.T @ self.Gamma_inv_prev @ v)
+            # prior_term = (2) * (v.T @ self.Gamma_inv_prev @ v)
 
             cost = group_term - prior_term
             # print(-cost)
@@ -69,11 +75,11 @@ class TrialData():
 
         if self.optim_type == "Newton":
             Result = op.minimize(fun=cost_func_optim, x0=init,
-                            jac=cost_grad_optim, hess=cost_hess_optim, method='Newton-CG', 
+                            jac=cost_grad_optim, hess=cost_hess_optim, method='Newton-CG',
                             options={'maxiter':max_iter, 'disp':False})
         elif self.optim_type == "BFGS": 
             Result = op.minimize(fun=cost_func_optim, x0=init,
-                            jac=cost_grad_optim, method='BFGS', 
+                            jac=cost_grad_optim, method='BFGS',
                             options={'maxiter':max_iter, 'disp':False})
         else:
             raise NotImplementedError
@@ -81,6 +87,8 @@ class TrialData():
         mu = Result.x
         # return mu
         Ups_inv = self.compute_fisher_info(mu)
+        diag_Ups_inv = np.diag(Ups_inv)
+        Ups = -1/diag_Ups_inv
         return mu, Ups_inv
 
 
@@ -305,7 +313,7 @@ class SpikeTrialDeltaReLUPoisson(SpikeTrial):
         lamb[lamb<=0] = np.nan
         
         log_lamb = np.nan_to_num(np.log(lamb), nan=0, neginf=0, posinf=0)
-        cost_pre = data * (np.log(delta) + log_lamb) - lamb*delta
+        cost_pre = data * (np.log(delta) + log_lamb) - np.nan_to_num(lamb)*delta
         cost = C*cost_pre.sum()
 
         return cost
@@ -321,7 +329,7 @@ class SpikeTrialDeltaReLUPoisson(SpikeTrial):
         lamb = alpha + x
         lamb[lamb<=0] = np.nan
         div = np.nan_to_num(data/lamb, nan=0, neginf=0, posinf=0)
-        diff = div - np.ones_like(lamb)*delta
+        diff = div - np.ones_like(np.nan_to_num(lamb))*delta
         g_pre = C*np.inner(W.T, diff)
         g = g_pre 
 

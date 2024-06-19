@@ -46,7 +46,7 @@ def run():
     print(f'Using {init_type} init and {optim_type} for optimization.')
 
 
-    data_path = f'saved/synthetic_data/simple_synthetic_deltarelupoisson_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
+    data_path = f'saved/synthetic_data/simple_latent_deltarelu_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
     save_path = f'saved/fitted_models/simple_synthetic_deltarelupoisson_em{num_em}_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}_fitted'
 
     # data_load = pickle_open(load_path)
@@ -68,7 +68,7 @@ def run():
     J_new = np.where(freqs > 50)[0][0] - 1
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
-    Wv = Wv[:,1:]
+     
 
     q = 5
     num_J_vars = Wv.shape[1]

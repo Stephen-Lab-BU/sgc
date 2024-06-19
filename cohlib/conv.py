@@ -4,7 +4,7 @@ import numpy as np
 
 
 # TODO test
-def conv_z_to_v(z, axis, dc=True):
+def conv_z_to_v(z, axis, dc=False):
     """
     Convert complex-valued fourier coefs to real-valued.
     Args:
@@ -17,7 +17,7 @@ def conv_z_to_v(z, axis, dc=True):
 
 
 # TODO test
-def conv_v_to_z(v, axis, dc=True):
+def conv_v_to_z(v, axis, dc=False):
     """
     Convert complex-valued fourier coefs to real-valued.
     Args:
@@ -30,7 +30,7 @@ def conv_v_to_z(v, axis, dc=True):
 
 
 # TODO test
-def conv_z_to_v_vec(z, dc=True):
+def conv_z_to_v_vec(z, dc=False):
     """
     Convert vector of complex-valued fourier coefs to complex-valued.
     """
@@ -46,7 +46,7 @@ def conv_z_to_v_vec(z, dc=True):
 
 
 # TODO test
-def conv_v_to_z_vec(v, dc=True):
+def conv_v_to_z_vec(v, dc=False):
     """
     Convert vector of real-valued fourier coefs to real-valued.
     """
@@ -80,6 +80,7 @@ def transform_cov_c2r(complex_cov):
     return rcov / 2
 
 
+# TODO add outer product function 
 def transform_cov_r2c(real_cov):
     """
     Convert covariance matrix from real-valued to complex-valued.

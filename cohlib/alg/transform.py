@@ -2,9 +2,31 @@ import numpy as np
 
 
 # TODO add option for DC that applies associated normalization correctly
+# TODO add support for (slen!=fs=1000)
+
+def _construct_real_idft_mod_Jsel(slen, J, J_list, fs, dc=False, order='standard'):
+    Jv_list = []
+    for j in J_list:
+        Jv_list.append(2*(j-1))
+        Jv_list.append(2*(j-1)+1)
+
+    Jv_select = np.array(Jv_list)
+
+    Jv_inds = np.arange(J*2)
+    Jv_filt = np.zeros_like(Jv_inds).astype(bool)
+    Jv_filt[Jv_select] = True
+
+    Wv_full = construct_real_idft(slen, J, fs, dc, order=order)
+    Wv_Js = Wv_full[:,Jv_filt]
+
+    return Wv_Js
+
+
 def construct_real_idft_mod(slen, J, J_max, fs, dc=False, order='standard'):
-    Jv = int(J * 2) + 2
-    Jv_max = int(J_max * 2) + 2
+    if dc is True:
+        Jv_max = int(J_max * 2) + 2
+    else:
+        Jv_max = int(J_max * 2)
 
     Wv = np.zeros((slen, Jv_max))
     for t in range(slen):
@@ -73,7 +95,7 @@ def construct_real_idft(slen, J, fs, dc=False, order="standard"):
     else:
         raise ValueError
 
-    return Jv
+    return Wv
 
 
 def generate_harmonic_dict(slen, fs, res, frange, widx=0):

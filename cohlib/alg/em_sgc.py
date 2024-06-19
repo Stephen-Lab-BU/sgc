@@ -55,15 +55,20 @@ def fit_sgc_model(
 
             if r == 0:
                 Gamma_prev_inv = Gamma_inv_init
+                Gamma_init = deconstruct_Gamma_full_real(Gamma_inv_init, K, num_J_vars, invert=True)
+                Gamma_prev_real_logdet = compute_Gamma_real_logdet(Gamma_init)
 
             mus = np.zeros((L, K * num_J_vars))
             Ups_invs = np.zeros((L, K * num_J_vars, K * num_J_vars))
 
             for l in range(L):
                 # print(f'Laplace Approx trial {l}')
+                # trial = get_trial_obj(
+                #     data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model, optim_type=optim_type,
+                # )
                 trial = get_trial_obj(
                     data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model, optim_type=optim_type,
-                )
+                Gamma_prev_logdet=Gamma_prev_real_logdet)
                 mu, fisher_info = trial.laplace_approx(max_approx_iters)
                 Ups_inv = -fisher_info
 
@@ -90,6 +95,7 @@ def fit_sgc_model(
             Gamma_prev_inv = construct_Gamma_full_real(
                 Gamma_update_complex, K, num_J_vars, invert=True, mu_only=mu_only_update
             )
+            Gamma_prev_real_logdet = compute_Gamma_real_logdet(Gamma_update_complex)
 
             if track is True:
                 taper_track_dict = {
@@ -115,7 +121,7 @@ def fit_sgc_model(
         return Gamma_est, Gamma_est_tapers
 
 
-def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model, optim_type):
+def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model, optim_type, Gamma_prev_logdet):
     """
     data is list of spike data (trial x neurons x time)
     """
@@ -133,7 +139,7 @@ def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model, optim_ty
     spike_objs = [
         SpikeTrial(data, params[k], taper) for k, data in enumerate(trial_data)
     ]
-    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, params, obs_model, optim_type)
+    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, params, obs_model, optim_type, Gamma_prev_logdet)
     return trial_obj
 
 
@@ -149,6 +155,14 @@ def get_freq_vecs_real(vec, K, num_J_vars):
         vec_j = vec[j_filt]
         j_vecs.append(vec_j)
     return j_vecs
+
+def compute_Gamma_real_logdet(Gamma_complex):
+    J = Gamma_complex.shape[0]
+    K = Gamma_complex.shape[1]
+    Gamma_real = np.stack([reverse_rearrange_mat(transform_cov_c2r(Gamma_complex[j,:,:]),K) for j in range(J)])
+
+    return np.log(np.linalg.det(Gamma_real)).sum()
+
 
 
 def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):

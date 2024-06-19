@@ -4,12 +4,12 @@ from cohlib.sample import gen_complex_cov, sample_complex_normal
 from cohlib.utils import conv_z_to_v
 
 def sample_zs_from_Gamma(Gamma, L, seed=None):
-    """Draw L samples from bcn distribution with covariances Z.
+    """Draw L samples from K-dim distribution with covariances Z.
     Args:
-        Z: (n_freqs, 2, 2), array of complex covs.
+        Z: (n_freqs, K, K), array of complex covs.
         L: number of samples to draw
     Returns:
-        z_samples: (L, 2, n_freqs), draws from Z
+        z_samples: (L, K, n_freqs), draws from Z
     """
     n_freqs = Gamma.shape[0]
     if seed is not None:
@@ -47,6 +47,7 @@ def gen_random_mvcn_params(T, Fs, K, return_freqs=True):
         return Gamma
 
 
+# TODO deprecated - remove
 def sample_from_Z(Z, L):
     """Draw L samples from bcn distribution with covariances Z.
     Args:

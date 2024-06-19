@@ -56,7 +56,7 @@ def run():
     J_new = np.where(freqs > 50)[0][0] - 1
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
-    # Wv = Wv[:,1:]
+    #  
     # Wv = Wv
 
     q = 5

@@ -4,6 +4,7 @@ experiments/sgc-bernoulli/saved
 experiments/sgc-bernoulli/old
 experiments/sgc-bernoulli/side_ideas
 experiments/sgc-relulink-poisson-delta/saved
+experiments/sgc-relulink-poisson-delta/old
 experiments/sgc-loglink-poisson-delta/saved
 cohlib/alg/deprecated
 cohlib/alg/deprecated/*
