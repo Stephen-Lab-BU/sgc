@@ -13,23 +13,25 @@ def run():
     parser.add_argument('sample_length', type=int, default=500)
     parser.add_argument('L', type=int, default=30)
     parser.add_argument('K', type=int, default=2)
-    parser.add_argument('C', type=int, default=25)
-    parser.add_argument('alpha', nargs='?', type=float, default=-3.5)
     parser.add_argument('seed', nargs='?', type=int, default=8)
+    parser.add_argument('C', type=int, default=0)
+    parser.add_argument('alpha', nargs='?', type=float, default=-3.5)
     args = parser.parse_args()
 
     sample_length = args.sample_length # sample length (was slen in notebook)
     seed = args.seed
     L = args.L
-    C = args.C
     K = args.K
-    alpha = args.alpha
 
+    if args.C > 0:
+        C = args.C
+        alpha = args.alpha
+        print(f"Generating SGC latent and spiking data (Poisson-ReLU) with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
+        save_path = f'saved/synthetic_data/simple_latent_deltarelu_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}.pkl'
 
-    print(f"Generating Synthetic SGC Poisson data (no DC) with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, alpha: {alpha}, seed: {seed}")
-
-    # save_path = f'saved/synthetic_data/simple_latent_deltarelu_{K}_{L}_{sample_length}_{C}_{alpha}_{seed}'
-    save_path = f'saved/synthetic_data/simple_latent_deltarelu_{K}_{L}_{sample_length}'
+    else:
+        print(f"Generating SGC latent data with L: {L}, K: {K}, sample_length: {sample_length}, seed: {seed}")
+        save_path = f'saved/synthetic_data/simple_latent_deltarelu_{K}_{L}_{sample_length}.pkl'
 
     fs = 1000
 
@@ -47,23 +49,23 @@ def run():
         raise NotImplementedError
 
 
-    # xs = latent['xs']
-    # alphas = np.array([alpha for k in range(K)])
-    # lams = cif_alpha_relu(alphas, xs)
-    # spikes = sample_spikes_from_xs(lams, C, delta=1/fs, obs_model='poisson')
-
-
     meta['L'] = L
-    meta['C'] = C
     meta['seed'] = seed
     meta['sample_length'] = sample_length
     meta['fs'] = 1000
 
+    if args.C > 0:
+        xs = latent['xs']
+        alphas = np.array([alpha for k in range(K)])
+        lams = cif_alpha_relu(alphas, xs)
+        spikes = sample_spikes_from_xs(lams, C, delta=1/fs, obs_model='poisson')
+        observed = dict(spikes=spikes, lams=lams, alpha=alpha)
 
-    # observed = dict(spikes=spikes, lams=lams, alpha=alpha)
+        meta['C'] = C
+        save_dict = dict(latent=latent, meta=meta, observed=observed)
 
-    # save_dict = dict(latent=latent, meta=meta, observed=observed)
-    save_dict = dict(latent=latent, meta=meta)
+    else:
+        save_dict = dict(latent=latent, meta=meta)
 
     pickle_save(save_dict, save_path)
 

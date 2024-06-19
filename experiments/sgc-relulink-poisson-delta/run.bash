@@ -6,10 +6,8 @@ rho=0
 kappa=0
 
 alpha=400
-Cdummy=1
-# python generate_latent_deltarelu_single_freq.py $win $L $K $Cdummy $alpha 
-
-python generate_latent_deltarelu.py $win $L $K $Cdummy $alpha 
+python generate_latent_deltarelu.py $win $L $K 
+# python generate_latent_single_freq_deltarelu.py $win $L $K 
 
 # init_type=flat
 # optim_type=Newton
