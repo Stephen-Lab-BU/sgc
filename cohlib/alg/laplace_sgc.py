@@ -20,6 +20,7 @@ class TrialData():
             self.compute_fisher_info = self.computer_fisher_info_delta_log_poisson
         elif self.obs_model == 'poisson-relu-delta':
             self.compute_fisher_info = self.compute_fisher_info_delta_relu_poisson
+            self.compute_fisher_info_copy = self.compute_fisher_info_delta_relu_poisson_copy
         elif self.obs_model == 'poisson-id-delta':
             self.compute_fisher_info = self.compute_fisher_info_delta_id_poisson
         elif self.obs_model == 'bernoulli':
@@ -86,9 +87,7 @@ class TrialData():
 
         mu = Result.x
         # return mu
-        Ups_inv = self.compute_fisher_info(mu)
-        diag_Ups_inv = np.diag(Ups_inv)
-        Ups = -1/diag_Ups_inv
+        Ups_inv = self.compute_fisher_info_copy(mu)
         return mu, Ups_inv
 
 
@@ -153,6 +152,37 @@ class TrialData():
             WFkW = Cs[k] * self.W.T @ F_k @ self.W
             WFkWs.append(WFkW)
         Hessian = -block_diag(*WFkWs) - self.Gamma_inv_prev
+        # check values on diagonal
+        test_diag = np.diag(Hessian)
+        test_diag_flag = np.all(test_diag < 0)
+
+
+        return -Hessian
+
+    def compute_fisher_info_delta_relu_poisson_copy(self, v_ests):
+        Cs = [obj.num_neurons for obj in self.trial_objs]
+        alphas = [obj.params['alpha'] for obj in self.trial_objs]
+        data_processed = [obj.data_processed for obj in self.trial_objs]
+        J = self.num_J_vars
+
+        WFkWs = []
+        for k in range(self.K):
+            v_ests_k = v_ests[k*J:k*J+J]
+            x = self.W @ v_ests_k
+
+            lamb = alphas[k] + x
+            lamb_relu = np.copy(lamb)
+            lamb_relu[lamb_relu<=0] = np.nan
+            
+            F_k = np.diag(np.nan_to_num(data_processed[k] / lamb_relu**2, nan=0, neginf=0, posinf=0))
+
+            WFkW = Cs[k] * self.W.T @ F_k @ self.W
+            WFkWs.append(WFkW)
+        Hessian = -block_diag(*WFkWs) - self.Gamma_inv_prev
+        # check values on diagonal
+        test_diag = np.diag(Hessian)
+        test_diag_flag = np.all(test_diag < 0)
+
 
         return -Hessian
 

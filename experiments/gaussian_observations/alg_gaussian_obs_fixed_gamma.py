@@ -4,7 +4,7 @@ import os
 import numpy as np
 from scipy.signal.windows import dpss
 
-from cohlib.alg.em_gaussian_obs import fit_gaussian_model, construct_Gamma_full_real_dc
+from cohlib.alg.em_gaussian_obs import fit_gaussian_model, construct_Gamma_full_real
 from cohlib.alg.transform import construct_real_idft_mod
 
 from cohlib.utils import pickle_save, pickle_open, get_dcval, conv_v_to_z
@@ -100,7 +100,7 @@ def run():
     Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, num_em_iters=num_em, 
                 max_approx_iters=50, track=True)
 
-    save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'])
+    save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], obs_var=obs_var)
     pickle_save(save_dict, save_path)
 
 def Gamma_est_from_zs(zs, dc=True):
