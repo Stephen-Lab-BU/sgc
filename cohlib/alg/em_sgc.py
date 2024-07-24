@@ -69,8 +69,7 @@ def fit_sgc_model(
                 trial = get_trial_obj(
                     data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model, optim_type=optim_type,
                 Gamma_prev_logdet=Gamma_prev_real_logdet)
-                mu, fisher_info = trial.laplace_approx(max_approx_iters)
-                Ups_inv = -fisher_info
+                mu, Ups_inv = trial.laplace_approx(max_approx_iters)
 
                 mus[l, :] = mu
                 Ups_invs[l, :, :] = Ups_inv
@@ -183,7 +182,7 @@ def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
         mu_js = get_freq_vecs_real(mus[l, :], K, num_J_vars)
         for j in range(J):
             mus_outer[l, j, :, :] = np.outer(mu_js[j], mu_js[j])
-            Upss[l, j, :, :] = -np.diag(1 / Ups_inv_j_vecs[j])
+            Upss[l, j, :, :] = np.diag(1 / Ups_inv_j_vecs[j])
 
     # enforce circulary symmetry
     k_mask_pre = 1 - np.eye(2)

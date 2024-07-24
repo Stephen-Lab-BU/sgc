@@ -2,11 +2,11 @@ import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
-from cohlib.alg.laplace_gaussian import TrialDataGaussian, GaussianTrial
+from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial
 
 from cohlib.utils import transform_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False):
+def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -44,32 +44,35 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
                 Gamma_prev_inv = Gamma_inv_init
 
             mus = np.zeros((L,K*num_J_vars))
-            neg_invUpss = np.zeros((L,K*num_J_vars,K*num_J_vars))
+            Ups_invs = np.zeros((L,K*num_J_vars,K*num_J_vars))
 
             for l in range(L):
                 # print(f'Laplace Approx trial {l}')
                 trial = get_gaussian_trial_obj(data, invQs, l, W, Gamma_prev_inv, taper=taper)
                 if etype == 'approx':
-                    mu, neg_invUps = trial.laplace_approx(max_approx_iters)
+                    mu, negUps_inv = trial.laplace_approx(max_approx_iters)
                 elif etype == 'analytical':
-                    mu, neg_invUps = trial.compute_estep_analytical()
+                    mu, negUps_inv = trial.compute_estep_analytical()
                 else:
                     raise ValueError
 
                 # real reprsentation
                 mus[l,:] = mu
-                neg_invUpss[l,:,:] = neg_invUps
+                Ups_invs[l,:,:] = -negUps_inv
 
 
             # M-Step
-            print(f'M-Step for EM iter {r+1}')
-            DC_update, Gamma_update_complex = update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars)
+            Gamma_update_complex, Sigma_complex = update_Gamma_complex(mus, Ups_invs, K, num_J_vars)
 
-            Gamma_prev_inv = construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=True)
+            Gamma_prev_inv = construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=True)
 
 
             if track is True:
-                taper_track_dict = {'gamma':Gamma_update_complex, 'DC':DC_update, 'inv':Gamma_prev_inv, 'mus':mus}
+                taper_track_dict = {'gamma_rplus1':Gamma_update_complex, 
+                'inv':Gamma_prev_inv, 
+                'mus':mus, 
+                'Ups_invs': Ups_invs,
+                'Sig_complex': Sigma_complex}
                 track_taper.append(taper_track_dict)
 
         track_tapers.append(track_taper)
@@ -83,86 +86,151 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
     else:
         return Gamma_est, Gamma_est_tapers, None
 
-def update_Gamma_complex_dc(mus, neg_invUpss, K, num_J_vars, dc=True):
-    L = mus.shape[0]
-    J_nodc = int((num_J_vars-1)/2)
-    J = J_nodc 
+def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
+    """
+    M-Step
 
-    DC_mus_outer = np.zeros((L,K,K))
-    DC_Upss = np.zeros((L,K,K))
-    mus_outer = np.zeros((L,J,K*2,K*2))
-    Upss = np.zeros((L,J,K*2,K*2))
+    mus is (trials x num_J_vars * K)
+    Ups_inv is (trials x num_J_vars * K x num_J_vars * K)
+    """
+    L = mus.shape[0]
+
+    J = int(num_J_vars / 2)
+    mus_outer = np.zeros((L, J, K * 2, K * 2))
+    Upss = np.zeros((L, J, K * 2, K * 2))
 
     for l in range(L):
-        neg_inv_Ups_j_vecs = get_freq_vecs_real_dc(np.diag(neg_invUpss[l,:,:]), K, num_J_vars)
-        mu_js = get_freq_vecs_real_dc(mus[l,:], K,num_J_vars)
-
-        DC_mus_outer[l,:,:] = np.outer(mu_js[0], mu_js[0])
-        DC_Upss[l,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[0])
+        Ups_inv_j_vecs = get_freq_vecs_real(np.diag(Ups_invs[l, :, :]), K, num_J_vars)
+        mu_js = get_freq_vecs_real(mus[l, :], K, num_J_vars)
         for j in range(J):
-            mus_outer[l,j,:,:] = np.outer(mu_js[j+1], mu_js[j+1])
-            Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j+1])
+            mus_outer[l, j, :, :] = np.outer(mu_js[j], mu_js[j])
+            Upss[l, j, :, :] = np.diag(1 / Ups_inv_j_vecs[j])
 
     # enforce circulary symmetry
     k_mask_pre = 1 - np.eye(2)
     k_mask_inv = block_diag(*[k_mask_pre for k in range(K)])
-    k_mask =  1 - k_mask_inv
+    k_mask = 1 - k_mask_inv
 
-    DC_update = np.zeros((K,K))
-    Gamma_update_complex = np.zeros((J,K,K), dtype=complex)
+    Gamma_update_complex = np.zeros((J, K, K), dtype=complex)
+    Sigmas_complex = np.zeros((L, J, K, K), dtype=complex)
     for l in range(L):
-        DC = DC_mus_outer[l,:,:] + DC_Upss[l,:,:]
-        Sig_real = mus_outer[l,:,:,:]*k_mask + Upss[l,:,:,:]
-        Sig_complex = np.zeros((J,K,K), dtype=complex)
-
+        Sig_real = mus_outer[l, :, :, :] * k_mask + Upss[l, :, :, :]
+        Sig_complex = np.zeros((J, K, K), dtype=complex)
         for j in range(J):
-            Sig_complex[j,:,:] = transform_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
-
-        DC_update += DC
+            Sig_complex[j, :, :] = transform_cov_r2c(
+                rearrange_mat(Sig_real[j, :, :], K)
+            )
         Gamma_update_complex += Sig_complex
-    DC_update = DC_update / L
-    DC_update = np.eye(K)*DC_update
+        Sigmas_complex[l,:,:,:] = Sig_complex
 
-    # Gamma_update_complex = (1/4)*Gamma_update_complex 
-
-    
-    # prior = np.eye(K) + 0*1j*np.eye(K)
-    # Gamma_update_complex = (L*Gamma_update_complex + prior[None,:,:]) / (2*K + 2 + L - 2*K - 1)
     Gamma_update_complex = Gamma_update_complex / L
 
-    return DC_update, Gamma_update_complex
+    return Gamma_update_complex, Sigmas_complex
 
-def construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=False):
-    J = int((num_J_vars-1)/2)
-
-
-    Gamma_full = np.zeros((K*num_J_vars, K*num_J_vars))
-    if invert is True:
-        DC_update = np.linalg.inv(DC_update)
-    base_filt = np.zeros(num_J_vars)
-    base_filt[0] = 1
-    j_filt = np.tile(base_filt.astype(bool), K)
-
-    for k in range(K):
-        Gamma_full[j_filt,k*num_J_vars] = DC_update[:,k]
-
-
-
+def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False, mu_only=False):
+    J = int(num_J_vars / 2)
+    Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
     for j in range(J):
-        Gamma_n = Gamma_update_complex[j,:,:]
+        Gamma_n = Gamma_update_complex[j, :, :]
         if invert is True:
-            Gamma_n = np.linalg.inv(Gamma_n)
-        Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n),K)
+            if mu_only is True:
+                Gamma_n = np.linalg.pinv(Gamma_n)
+            else:
+                Gamma_n = np.linalg.inv(Gamma_n)
+        Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n), K)
         base_filt = np.zeros(num_J_vars)
-        j_var = int(j*2 + 1)
-        base_filt[j_var:j_var+2] = 1
+        j_var = int(j * 2)
+        base_filt[j_var : j_var + 2] = 1
         j_filt = np.tile(base_filt.astype(bool), K)
         # print(j_filt)
         for k in range(K):
-            kj = int(k*2)
-            Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
+            kj = int(k * 2)
+            Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
+                Gamma_n_real[:, kj : kj + 2]
+            )
 
     return Gamma_full
+
+# def update_Gamma_complex_dc(mus, Ups_invs, K, num_J_vars, dc=True):
+#     L = mus.shape[0]
+#     J_nodc = int((num_J_vars-1)/2)
+#     J = J_nodc 
+
+#     DC_mus_outer = np.zeros((L,K,K))
+#     DC_Upss = np.zeros((L,K,K))
+#     mus_outer = np.zeros((L,J,K*2,K*2))
+#     Upss = np.zeros((L,J,K*2,K*2))
+
+#     for l in range(L):
+#         neg_inv_Ups_j_vecs = get_freq_vecs_real_dc(np.diag(Ups_invs[l,:,:]), K, num_J_vars)
+#         mu_js = get_freq_vecs_real_dc(mus[l,:], K,num_J_vars)
+
+#         DC_mus_outer[l,:,:] = np.outer(mu_js[0], mu_js[0])
+#         DC_Upss[l,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[0])
+#         for j in range(J):
+#             mus_outer[l,j,:,:] = np.outer(mu_js[j+1], mu_js[j+1])
+#             Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j+1])
+
+#     # enforce circulary symmetry
+#     k_mask_pre = 1 - np.eye(2)
+#     k_mask_inv = block_diag(*[k_mask_pre for k in range(K)])
+#     k_mask =  1 - k_mask_inv
+
+#     DC_update = np.zeros((K,K))
+#     Gamma_update_complex = np.zeros((J,K,K), dtype=complex)
+#     for l in range(L):
+#         DC = DC_mus_outer[l,:,:] + DC_Upss[l,:,:]
+#         Sig_real = mus_outer[l,:,:,:]*k_mask + Upss[l,:,:,:]
+#         Sig_complex = np.zeros((J,K,K), dtype=complex)
+
+#         for j in range(J):
+#             Sig_complex[j,:,:] = transform_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
+
+#         DC_update += DC
+#         Gamma_update_complex += Sig_complex
+#     DC_update = DC_update / L
+#     DC_update = np.eye(K)*DC_update
+
+#     # Gamma_update_complex = (1/4)*Gamma_update_complex 
+
+    
+#     # prior = np.eye(K) + 0*1j*np.eye(K)
+#     # Gamma_update_complex = (L*Gamma_update_complex + prior[None,:,:]) / (2*K + 2 + L - 2*K - 1)
+#     Gamma_update_complex = Gamma_update_complex / L
+
+#     return Gamma_update_complex
+
+# def construct_Gamma_full_real_dc(DC_update, Gamma_update_complex, K, num_J_vars, invert=False):
+#     J = int((num_J_vars-1)/2)
+
+
+#     Gamma_full = np.zeros((K*num_J_vars, K*num_J_vars))
+#     if invert is True:
+#         DC_update = np.linalg.inv(DC_update)
+#     base_filt = np.zeros(num_J_vars)
+#     base_filt[0] = 1
+#     j_filt = np.tile(base_filt.astype(bool), K)
+
+#     for k in range(K):
+#         Gamma_full[j_filt,k*num_J_vars] = DC_update[:,k]
+
+
+
+#     for j in range(J):
+#         Gamma_n = Gamma_update_complex[j,:,:]
+#         if invert is True:
+#             Gamma_n = np.linalg.inv(Gamma_n)
+#         Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n),K)
+#         base_filt = np.zeros(num_J_vars)
+#         j_var = int(j*2 + 1)
+#         base_filt[j_var:j_var+2] = 1
+#         j_filt = np.tile(base_filt.astype(bool), K)
+#         # print(j_filt)
+#         for k in range(K):
+#             kj = int(k*2)
+#             Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
+
+#     return Gamma_full
 
 
 
@@ -203,63 +271,6 @@ def get_freq_vecs_real_dc(vec, K, num_J_vars):
         j_vecs.append(vec_j)
     return j_vecs
 
-
-def update_Gamma_complex(mus, neg_invUpss, K, num_J_vars):
-    '''
-    mus is (trials x num_J_vars * K)
-    neg_invUps is (trials x num_J_vars * K x num_J_vars * K)
-    '''
-    L = mus.shape[0]
-
-    J = int(num_J_vars/2)
-    mus_outer = np.zeros((L,J,K*2,K*2))
-    Upss = np.zeros((L,J,K*2,K*2))
-    
-    for l in range(L):
-        neg_inv_Ups_j_vecs = get_freq_vecs_real(np.diag(neg_invUpss[l,:,:]), K, num_J_vars)
-        mu_js = get_freq_vecs_real(mus[l,:], K,num_J_vars)
-        for j in range(J):
-            mus_outer[l,j,:,:] = np.outer(mu_js[j], mu_js[j])
-            Upss[l,j,:,:] = -np.diag(1/neg_inv_Ups_j_vecs[j])
-
-    # enforce circulary symmetry
-    k_mask_pre = 1 - np.eye(2)
-    k_mask_inv = block_diag(*[k_mask_pre for k in range(K)])
-    k_mask =  1 - k_mask_inv
-
-    Gamma_update_complex = np.zeros((J,K,K), dtype=complex)
-    for l in range(L):
-        Sig_real = mus_outer[l,:,:,:]*k_mask + Upss[l,:,:,:]
-        Sig_complex = np.zeros((J,K,K), dtype=complex)
-        for j in range(J):
-            Sig_complex[j,:,:] = transform_cov_r2c(rearrange_mat(Sig_real[j,:,:],K))
-        Gamma_update_complex += Sig_complex
-    Gamma_update_complex = Gamma_update_complex / L
-
-    prior = np.eye(K) + 0*1j*np.eye(K)
-    Gamma_update_complex += prior[None,:,:]
-
-    return Gamma_update_complex
-
-
-def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False):
-    J = int(num_J_vars/2)
-    Gamma_full = np.zeros((K*num_J_vars, K*num_J_vars))
-    for j in range(J):
-        Gamma_n = Gamma_update_complex[j,:,:]
-        if invert == True:
-            Gamma_n = np.linalg.inv(Gamma_n)
-        Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n),K)
-        base_filt = np.zeros(num_J_vars)
-        j_var = int(j*2)
-        base_filt[j_var:j_var+2] = 1
-        j_filt = np.tile(base_filt.astype(bool), K)
-        # print(j_filt)
-        for k in range(K):
-            kj = int(k*2)
-            Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
-
-    return Gamma_full
 
 
 
