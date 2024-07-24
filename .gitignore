@@ -10,4 +10,5 @@ cohlib/alg/deprecated
 cohlib/alg/deprecated/*
 experiments/old
 experiments/gaussian_observations/saved
+experiments/gaussian_observations2/saved
 __pycache__
