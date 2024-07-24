@@ -25,7 +25,7 @@ def sample_zs_from_Gamma(Gamma, L, seed=None):
 
     return z_draws
 
-def gen_random_mvcn_params(T, Fs, K, return_freqs=True):
+def gen_random_mvcn_params(T, Fs, K, cut_freq=None, return_freqs=True):
     """"
     Generate (random) multivariate cc complex normal covariances.
     Args:
@@ -35,8 +35,11 @@ def gen_random_mvcn_params(T, Fs, K, return_freqs=True):
         Gamma: (n_freqs, K, K) matrix of cc complex covariances.
     """
     # TODO handle weird times
-    n = int(T / (1/Fs))
     freqs = get_freqs(T, Fs)
+    if cut_freq is not None:
+        cut_freq_ind = np.where(freqs > cut_freq)[0][0]
+        freqs = freqs[:cut_freq_ind]
+
     n_freqs = freqs.size 
     Gamma = np.stack([gen_complex_cov(K) for _ in range(n_freqs)])
 
