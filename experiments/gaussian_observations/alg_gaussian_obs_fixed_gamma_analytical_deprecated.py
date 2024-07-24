@@ -4,10 +4,10 @@ import os
 import numpy as np
 from scipy.signal.windows import dpss
 
-from cohlib.alg.em_gaussian_obs_nodc import fit_gaussian_model_nodc
+from cohlib.alg.em_gaussian_obs import fit_gaussian_model, construct_Gamma_full_real_dc
 from cohlib.alg.transform import construct_real_idft_mod
 
-from cohlib.utils import pickle_save, pickle_open
+from cohlib.utils import pickle_save, pickle_open, get_dcval, conv_v_to_z
 
 
 # variables we would like to be able to set through CLI:
@@ -36,9 +36,9 @@ def run():
     obs_var = ov1 * (10**ov2)
 
     # load_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}'
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_nodc_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
+    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
     print(f"Fitting Synthetic Gaussian observation data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, obs_var: {ov1}e{ov2}, seed: {seed}")
-    save_path = f'saved/fitted_models/simple_synthetic_gaussian_nodc_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
+    save_path = f'saved/fitted_models/simple_synthetic_gaussian_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
 
     # data_load = pickle_open(load_path)
     gamma_load = pickle_open(load_gamma_path)
@@ -61,7 +61,6 @@ def run():
     J_new = np.where(freqs > 50)[0][0] - 1
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
-     
 
     q = 5
     num_J_vars = Wv.shape[1]
@@ -92,7 +91,7 @@ def run():
     # Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, num_em_iters=num_em, 
     #             max_approx_iters=50, track=True)
 
-    Gamma_est, Gamma_est_tapers, track = fit_gaussian_model_nodc(ys_grouped, Wv, inits, tapers, invQs, etype='analytical', num_em_iters=num_em, 
+    Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, etype='analytical', num_em_iters=num_em, 
                 max_approx_iters=0, track=False)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)
