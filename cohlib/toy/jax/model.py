@@ -3,6 +3,7 @@ import scipy.optimize as op
 
 import jax
 import jax.numpy as jnp
+from efax import BernoulliNP
 import jax.random as jr
 from jax import grad, hessian
 import jax.scipy.optimize as jop

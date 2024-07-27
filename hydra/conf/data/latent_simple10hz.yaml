@@ -1,0 +1,5 @@
+latent:
+  sample_length: 1000
+  L: 25
+  K: 2
+  seed: 7
