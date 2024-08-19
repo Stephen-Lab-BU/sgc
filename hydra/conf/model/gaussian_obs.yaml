@@ -1,0 +1,6 @@
+init: true-init
+maxiter: 5
+emiters: 10
+scale_init: 0.01
+support: null
+track_mus: true

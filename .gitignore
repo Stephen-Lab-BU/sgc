@@ -1,4 +1,6 @@
 *.ipynb_checkpoints
+.vscode
+.pytest_cache
 scratch
 experiments/sgc-bernoulli/saved
 experiments/sgc-bernoulli/old
@@ -12,4 +14,7 @@ experiments/old
 experiments/gaussian_observations/saved
 experiments/gaussian_observations2/saved
 hydra/outputs
+hydra/archive
+hydra/batch_submit
+hydra/gammas
 __pycache__

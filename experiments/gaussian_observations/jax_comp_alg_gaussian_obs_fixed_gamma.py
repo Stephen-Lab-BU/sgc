@@ -7,7 +7,13 @@ from scipy.signal.windows import dpss
 from cohlib.alg.em_gaussian_obs import fit_gaussian_model
 from cohlib.alg.transform import construct_real_idft_mod
 
-from cohlib.utils import pickle_save, pickle_open
+from cohlib.utils import pickle_save, pickle_open, gamma_root
+
+import jax.numpy as jnp
+import jax.random as jr
+from cohlib.jax.dists import sample_from_gamma
+from cohlib.jax.gaussian_obs import add0
+
 
 
 # variables we would like to be able to set through CLI:
@@ -34,28 +40,51 @@ def run():
     ov1 = args.obs_var1
     ov2 = args.obs_var2
     obs_var = ov1 * (10**ov2)
-    
-    print(os.getcwd())
+    fs = 1e3
+    des = 10
+    scale_init = (1/(des*2)) 
+    etype='approx'
+
+    lseed = 7
+    oseed = 7
 
     # load_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}'
     # load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
-
-    load_gamma_path = f'saved/synthetic_data/simple_synthetic_gaussian_{K}_{L}_{sample_length}_1_0.0_1.0_0.0_7'
     print(f"Fitting Synthetic Gaussian observation data with L: {L}, K: {K}, sample_length: {sample_length}, C: {C}, mu: {mu}, obs_var: {ov1}e{ov2}, seed: {seed}")
-    save_path = f'saved/fitted_models/simple_synthetic_gaussian_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_analytical'
+    save_path = f'saved/fitted_models/jax_comp_simple_synthetic_gaussian_em{num_em}_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_{etype}.pkl'
 
-    # data_load = pickle_open(load_path)
-    gamma_load = pickle_open(load_gamma_path)
+    flow = 1
+    fhigh = 50
+    sp_target = 5
+    sp_offtarget = 1
+    gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}.pickle")
+    gamma_load = pickle_open(gamma_path)
 
-    Gamma_true = gamma_load['latent']['Gamma']
-    Wv = gamma_load['meta']['Wv']
-    fs = gamma_load['meta']['fs']
-    freqs = gamma_load['meta']['freqs']
 
-    xs = gamma_load['latent']['xs']
-    xs_rep = np.stack([xs for _ in range(C)]).swapaxes(0,1)
+    gamma_full = gamma_load['gamma']
+    freqs = gamma_load['freqs']
+    N = freqs.size
+    nz = gamma_load['nonzero_inds']
+    nz_target = jnp.array([9])
+    K = gamma_full.shape[-1]
 
-    ys = xs_rep + np.random.randn(*xs_rep.shape)*np.sqrt(obs_var)
+    lrk = jr.key(lseed)
+
+    zs = sample_from_gamma(lrk, gamma_full, L)
+    zs_0dc = jnp.apply_along_axis(add0, 0, zs)
+    xs = jnp.fft.irfft(zs_0dc, axis=0)
+
+    ork = jr.key(oseed)
+
+
+    print(f"Sampling observations with variance {ov1}e^{ov2}")
+    obs_var = ov1 * 10**ov2
+    # obs_var = ocfg.ov1 * 10**{ocfg.ov2}
+    jax_ys = xs + jr.normal(ork, xs.shape)*jnp.sqrt(obs_var)
+    ys = np.array(jax_ys)[:,None,:,:]
+    ys = ys.swapaxes(0,-1)
+
+
 
 
     sample_length = ys.shape[3]
@@ -66,10 +95,8 @@ def run():
 
     Wv = construct_real_idft_mod(sample_length, J_orig, J_new, fs)
      
-
-    q = 5
     num_J_vars = Wv.shape[1]
-    Gamma_inv_init = np.eye(K*num_J_vars)*q
+    Gamma_inv_init = np.eye(K*num_J_vars)*scale_init
 
     # for k in range(K):
     #     Gamma_inv_init[k,k] = dc_init[k,k]
@@ -79,7 +106,7 @@ def run():
         # 'Gamma_inv_init': true_init,
         # 'Gamma_inv_init': sampletrue_init,
         'mu': mu,
-        'Gamma_true': Gamma_true
+        'Gamma_true': gamma_full
         }
 
     # spikes_short = spikes[:10,:,:,:]
@@ -96,7 +123,7 @@ def run():
     # Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, num_em_iters=num_em, 
     #             max_approx_iters=50, track=True)
 
-    Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, etype='analytical', num_em_iters=num_em, 
+    Gamma_est, Gamma_est_tapers, track = fit_gaussian_model(ys_grouped, Wv, inits, tapers, invQs, etype=etype, num_em_iters=num_em, 
                 max_approx_iters=0, track=True)
 
     # save_dict = dict(Gamma=Gamma_est, tapers=Gamma_est_tapers, Wv=Wv, track=track, inv_init=inits['Gamma_inv_init'], ys=ys)

@@ -1,0 +1,9 @@
+gamma: 'k2-full-10'
+scale: 1
+freq_low: 1
+freq_high: 50
+scale_power_target: 5
+scale_power_offtarget: 1
+L: 50
+seed: 7 
+sel_nz: 9

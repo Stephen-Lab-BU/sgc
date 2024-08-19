@@ -9,9 +9,10 @@
 # for o1 in 10 9 8 # 7 6 5 4 3 2 1
 for o1 in 1 
 do 
-    for o2 in -2 0 2 
+    for o2 in -3
     do 
-        python alg_gaussian_obs_fixed_gamma_analytical.py 1000 25 2 1 0.0 $o1 $o2 10
+        python jax_comp_alg_gaussian_obs_fixed_gamma.py 1000 25 2 1 0.0 $o1 $o2 20
+        # python alg_gaussian_obs_fixed_gamma_confirm.py 1000 25 2 1 0.0 $o1 $o2 20
     done
 done
 

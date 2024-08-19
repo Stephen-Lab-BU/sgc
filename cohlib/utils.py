@@ -2,6 +2,9 @@ from cohlib.conv import *
 import numpy as np
 import pickle
 
+def gamma_root():
+    return '/projectnb/stephenlab/jtauber/cohlib/hydra/gammas'
+
 
 def get_dcval(mean, J):
     """
