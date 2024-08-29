@@ -14,6 +14,7 @@ experiments/old
 experiments/gaussian_observations/saved
 experiments/gaussian_observations2/saved
 hydra/outputs
+hydra/ts_output
 hydra/archive
 hydra/batch_submit
 hydra/gammas
