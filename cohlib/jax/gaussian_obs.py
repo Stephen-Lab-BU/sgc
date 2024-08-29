@@ -11,14 +11,19 @@ def add_dc(x, dc):
     return with_dc
 add0 = partial(add_dc, dc=0)
 
-def get_e_step_cost_func(trial_data, gamma_prev_inv, params):
-    K = trial_data.shape[1]
+def get_e_step_cost_func(trial_data, gamma_prev_inv, params, zs_flattened=False):
+    if trial_data.ndim == 2:
+        K = trial_data.shape[1]
+    else:
+        K = params['K']
     obs_var = params['obs_var']
     freqs = params['freqs']
     N = freqs.size
     nz_inds = params['nonzero_inds']
 
     def calc_obs_cost(z, data, K, N, nonzero_inds):
+        if zs_flattened:
+            z = z.reshape(-1,K)
         zs = jnp.zeros((N,K), dtype=complex)
         zs = zs.at[nonzero_inds,:].set(z)
 
@@ -26,12 +31,18 @@ def get_e_step_cost_func(trial_data, gamma_prev_inv, params):
         xs = jnp.fft.irfft(zs_0dc, axis=0)
         err = (data - xs)
 
-        partial_ll = -0.5 * (err**2 * 1/obs_var).sum()
+        # partial_ll = -0.5 * (err**2 * 1/obs_var).sum()
+        a = -0.5 * (err**2 * 1/obs_var)
+        b = a.sum(0)
+        partial_ll = b.sum()
+        
         obs_cost = -partial_ll
 
         return obs_cost
 
     def calc_latent_cost(z, Gpi, K, N, nonzero_inds):
+        if zs_flattened:
+            z = z.reshape(-1,K)
         zs = jnp.zeros((N,K), dtype=complex)
         zs = zs.at[nonzero_inds,:].set(z)
         partial_ll = -jnp.einsum('kn,nki,ni->', zs.conj().T, Gpi, zs) # pylint: disable=invalid-unary-operand-type
@@ -40,7 +51,9 @@ def get_e_step_cost_func(trial_data, gamma_prev_inv, params):
         return latent_cost
 
     def cost_func(z):
-        cost = calc_obs_cost(z, trial_data, K, N, nz_inds) + calc_latent_cost(z, gamma_prev_inv, K, N, nz_inds)
+        obs_cost = calc_obs_cost(z, trial_data, K, N, nz_inds) 
+        latent_cost = calc_latent_cost(z, gamma_prev_inv, K, N, nz_inds)
+        cost = obs_cost + latent_cost
         return cost
 
     return cost_func

@@ -6,7 +6,7 @@ from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial
 
 from cohlib.utils import transform_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False):
+def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False, hess_mod=False):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -19,6 +19,8 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
     # inits
     Gamma_inv_init = inits['Gamma_inv_init']
 
+    if hess_mod is True:
+        print("Hessian computation will be modified.")
 
     track_tapers = []
     Gamma_est_tapers = []
@@ -58,7 +60,10 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
 
                 # real reprsentation
                 mus[l,:] = mu
-                Ups_invs[l,:,:] = -negUps_inv
+                if hess_mod is True:
+                    Ups_invs[l,:,:] = -negUps_inv / 2
+                else:
+                    Ups_invs[l,:,:] = -negUps_inv
 
 
             # M-Step
