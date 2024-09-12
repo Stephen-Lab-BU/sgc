@@ -10,6 +10,8 @@ experiments/sgc-relulink-poisson-delta/old
 experiments/sgc-loglink-poisson-delta/saved
 cohlib/alg/deprecated
 cohlib/alg/deprecated/*
+cohlib/alg/temp1.py
+cohlib/alg/temp2.py
 experiments/old
 experiments/gaussian_observations/saved
 experiments/gaussian_observations2/saved
