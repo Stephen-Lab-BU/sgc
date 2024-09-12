@@ -13,8 +13,10 @@ cohlib/alg/deprecated/*
 experiments/old
 experiments/gaussian_observations/saved
 experiments/gaussian_observations2/saved
-hydra/outputs
-hydra/ts_output
+hydra/gaussian_obs/outputs
+hydra/pp_relu_obs/outputs
+hydra/pp_log_obs/outputs
+hydra/gaussian_obs/ts_output
 hydra/archive
 hydra/batch_submit
 hydra/gammas

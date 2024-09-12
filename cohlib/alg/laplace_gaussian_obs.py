@@ -201,6 +201,9 @@ def add_dc(x, dc):
 add0 = partial(add_dc, dc=0)
 
 class GaussianTrialMod():
+    """
+        Test case - performs similarly to GaussianTrial() )
+    """
     def __init__(self, data, obs_var_inv, taper=None):
         self.data = data
         self.num_neurons = data.shape[0]

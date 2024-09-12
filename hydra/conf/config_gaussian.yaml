@@ -1,0 +1,9 @@
+defaults: 
+  - latent: full10
+  - obs: gaussian_obs
+  - model: full_support
+
+model:
+  init: 'true-init'
+  scale_init: 10000
+  true_to_flat: 'target'

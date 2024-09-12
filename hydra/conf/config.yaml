@@ -1,4 +1,0 @@
-defaults: 
-  - latent: full10
-  - obs: gaussian_obs
-  - model: gaussian_obs

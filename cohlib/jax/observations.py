@@ -11,32 +11,98 @@ def add_dc(x, dc):
     return with_dc
 add0 = partial(add_dc, dc=0)
 
-def get_e_step_cost_func(trial_data, gamma_prev_inv, params, zs_flattened=False):
+
+def _obs_cost_gaussian(z, data, K, N, nonzero_inds, params, zs_flattened):
+    obs_var = params['obs_var']
+    if zs_flattened:
+        z = z.reshape(-1,K)
+    zs = jnp.zeros((N,K), dtype=complex)
+    zs = zs.at[nonzero_inds,:].set(z)
+
+    zs_0dc = jnp.apply_along_axis(add0, 0, zs)
+    xs = jnp.fft.irfft(zs_0dc, axis=0)
+    err = (data - xs)
+
+    # partial_ll = -0.5 * (err**2 * 1/obs_var).sum()
+    a = -0.5 * (err**2 * 1/obs_var)
+    b = a.sum(0)
+    obs_ll = b.sum()
+    
+    obs_cost = -obs_ll
+
+    return obs_cost
+
+
+def _obs_cost_pp_relu(z, data, K, N, nonzero_inds, params, zs_flattened):
+    alpha = params['alpha']
+    delta = params['delta']
+    if zs_flattened:
+        z = z.reshape(-1,K)
+    zs = jnp.zeros((N,K), dtype=complex)
+    zs = zs.at[nonzero_inds,:].set(z)
+
+    zs_0dc = jnp.apply_along_axis(add0, 0, zs)
+    xs = jnp.fft.irfft(zs_0dc, axis=0)
+
+    if jnp.ndim(alpha) == 0:
+        lams = xs + alpha
+    else:
+        xs + alpha[None,:,None]
+
+    # cannot index with boolean like: lams = lams.at[lams < 0].set(jnp.nan); so:
+    lams = jnp.where(lams < 0, jnp.nan, lams)
+
+    log_lams = jnp.nan_to_num(jnp.log(lams), nan=0, neginf=0, posinf=0)
+    obs_ll_calc = data*(jnp.log(delta) + log_lams) - jnp.nan_to_num(lams)*delta
+    obs_ll = obs_ll_calc.sum()
+    obs_cost = -obs_ll
+
+    return obs_cost
+
+def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params, zs_flattened):
+    alpha = params['alpha']
+    delta = params['delta']
+    if zs_flattened:
+        z = z.reshape(-1,K)
+    zs = jnp.zeros((N,K), dtype=complex)
+    zs = zs.at[nonzero_inds,:].set(z)
+
+    zs_0dc = jnp.apply_along_axis(add0, 0, zs)
+    xs = jnp.fft.irfft(zs_0dc, axis=0)
+
+    if jnp.ndim(alpha) == 0:
+        log_lams = xs + alpha + jnp.log(delta)
+    else:
+        log_lams = xs + alpha[None,:,None] + jnp.log(delta)
+
+    obs_ll_calc = (data*log_lams) - jnp.exp(log_lams)*delta
+    obs_ll = obs_ll_calc.sum()
+    obs_cost = -obs_ll
+
+    return obs_cost
+     
+
+
+def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type, zs_flattened=False):
     if trial_data.ndim == 2:
         K = trial_data.shape[1]
     else:
         K = params['K']
-    obs_var = params['obs_var']
+    # obs_var = params['obs_var']
+    obs_params = params['obs']
     freqs = params['freqs']
     N = freqs.size
     nz_inds = params['nonzero_inds']
 
-    def calc_obs_cost(z, data, K, N, nonzero_inds):
-        if zs_flattened:
-            z = z.reshape(-1,K)
-        zs = jnp.zeros((N,K), dtype=complex)
-        zs = zs.at[nonzero_inds,:].set(z)
+    def calc_obs_cost(z, data, K, N, nonzero_inds, obs_params, zs_flattened=False):
+        if obs_type == 'gaussian':
+            obs_cost_func = _obs_cost_gaussian
+        elif obs_type == 'pp_relu':
+            obs_cost_func = _obs_cost_pp_relu
+        else:
+            return NotImplementedError
 
-        zs_0dc = jnp.apply_along_axis(add0, 0, zs)
-        xs = jnp.fft.irfft(zs_0dc, axis=0)
-        err = (data - xs)
-
-        # partial_ll = -0.5 * (err**2 * 1/obs_var).sum()
-        a = -0.5 * (err**2 * 1/obs_var)
-        b = a.sum(0)
-        partial_ll = b.sum()
-        
-        obs_cost = -partial_ll
+        obs_cost = obs_cost_func(z, data, K, N, nonzero_inds, obs_params, zs_flattened)
 
         return obs_cost
 
@@ -45,20 +111,20 @@ def get_e_step_cost_func(trial_data, gamma_prev_inv, params, zs_flattened=False)
             z = z.reshape(-1,K)
         zs = jnp.zeros((N,K), dtype=complex)
         zs = zs.at[nonzero_inds,:].set(z)
-        partial_ll = -jnp.einsum('kn,nki,ni->', zs.conj().T, Gpi, zs) # pylint: disable=invalid-unary-operand-type
-        latent_cost = -partial_ll
+        latent_ll = -jnp.einsum('kn,nki,ni->', zs.conj().T, Gpi, zs) # pylint: disable=invalid-unary-operand-type
+        latent_cost = -latent_ll
 
         return latent_cost
 
     def cost_func(z):
-        obs_cost = calc_obs_cost(z, trial_data, K, N, nz_inds) 
+        obs_cost = calc_obs_cost(z, trial_data, K, N, nz_inds, obs_params) 
         latent_cost = calc_latent_cost(z, gamma_prev_inv, K, N, nz_inds)
         cost = obs_cost + latent_cost
         return cost
 
     return cost_func
 
-def e_step_par(data, gamma_prev_inv, params, max_iter=5, Ups_diag=False, return_mus=False):
+def e_step_par(data, gamma_prev_inv, params, obs_type, max_iter=5, Ups_diag=False, return_mus=False):
     
     K = data.shape[1]
     num_devices = len(jax.devices())
@@ -70,10 +136,10 @@ def e_step_par(data, gamma_prev_inv, params, max_iter=5, Ups_diag=False, return_
     mus_outer = jnp.zeros((Nnz,K,K,L), dtype=complex)
     zs_init = jnp.zeros((Nnz,K), dtype=complex)
 
-    def trial_optimizer(l, batch, gpi, p):
+    def trial_optimizer(trial, batch, gpi, p, obs_type):
 
-        trial_data = batch[:,:,l]
-        cost_func = get_e_step_cost_func(trial_data, gpi, p)
+        trial_data = batch[:,:,trial]
+        cost_func = get_e_step_cost_func(trial_data, gpi, p, obs_type)
         cost_grad = jax.grad(cost_func, holomorphic=True)
         cost_hess = jax.hessian(cost_func, holomorphic=True)
         zs_est = zs_init
@@ -85,6 +151,8 @@ def e_step_par(data, gamma_prev_inv, params, max_iter=5, Ups_diag=False, return_
 
             zs_grad = cost_grad(zs_est).conj()
             zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_sel_inv, zs_grad)
+            _cost = cost_func(zs_est)
+            # jax.debug.breakpoint()
 
         zs_est = zs_est.reshape((Nnz,K))
         mu_outer = jnp.einsum('nk,ni->nki', zs_est, zs_est.conj())
@@ -108,7 +176,8 @@ def e_step_par(data, gamma_prev_inv, params, max_iter=5, Ups_diag=False, return_
         func = partial(trial_optimizer,
             batch=batch_data,
             gpi=gamma_prev_inv,
-            p=params)
+            p=params,
+            obs_type=obs_type)
         if b == num_batches - 1:
             num_run_trials = b*num_devices
             remaining = L - num_run_trials
