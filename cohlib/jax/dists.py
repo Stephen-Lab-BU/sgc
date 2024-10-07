@@ -147,3 +147,15 @@ def sample_from_gamma(rk, gamma, L):
     # samples = jnp.stack([sample_ccn(rk+n, gamma[n,:,:], L) for n in range(N)])
 
     return samples
+
+
+def naive_estimator(spikes, nonzero_inds=None):
+    "spikes has shape (time, unit, trial)"
+    n_f0 = jnp.fft.rfft(spikes, axis=0)
+    n_f = n_f0[1:,:,:]
+    naive_est = jnp.einsum('jkl,jil->jkil', n_f, n_f.conj()).mean(-1)
+
+    if nonzero_inds is None:
+        return naive_est
+    else:
+        return naive_est[nonzero_inds, :, :]

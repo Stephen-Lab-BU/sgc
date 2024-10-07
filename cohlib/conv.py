@@ -80,7 +80,6 @@ def transform_cov_c2r(complex_cov):
     return rcov / 2
 
 
-# TODO add outer product function 
 def transform_cov_r2c(real_cov):
     """
     Convert covariance matrix from real-valued to complex-valued.

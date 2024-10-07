@@ -7,10 +7,13 @@ import jax.random as jr
 
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.dists import sample_from_gamma, sample_obs, naive_estimator
+from cohlib.alg.em_gaussian_obs import fit_gaussian_model
 from cohlib.jax.observations import e_step_par, m_step, add0
 from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1
+from cohlib.jax.ts_gaussian import JvOExp
+from cohlib.alg.em_sgc import construct_Gamma_full_real, deconstruct_Gamma_full_real
 
-def gen_data_and_fit_model(cfg):
+def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
 
     lcfg = cfg.latent
     ocfg = cfg.obs
@@ -165,26 +168,57 @@ def gen_data_and_fit_model(cfg):
               'nonzero_inds': nz}
     
     gamma_init = jnp.linalg.inv(gamma_inv_init[nz,:,:])
-    track = {'mus': [], 'gamma': [], 'Upss': []}
     print(f"Running EM for {mcfg.emiters} iters. Newton iters = {mcfg.maxiter}")
-    gamma_prev_inv = gamma_inv_init
-    for r in range(mcfg.emiters):
-        print(f'EM Iter {r+1}')
-        if mcfg.track_mus is True:
-            mus_all, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type, return_mus=True)
-            mus = mus_all[0]
-            mus_outer = mus_all[1]
-            track['mus'].append(mus)
-            track['Upss'].append(Upss)
-        else:
-            mus_outer, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type)
 
-        gamma_update = m_step(mus_outer, Upss)
+    old_model_load = load_old()
+    Wv = old_model_load['Wv']
+    obs_var = obs_params['obs_var']
 
-        gamma_prev_inv_model = jnp.linalg.inv(gamma_update)
-        gamma_prev_inv = jnp.zeros_like(gamma_full)
-        gamma_prev_inv = gamma_prev_inv.at[nz,:,:].set(gamma_prev_inv_model)
-        track['gamma'].append(gamma_update)
 
-    save_dict = {'gamma': gamma_update, 'params': params, 'gamma_init': gamma_init, 'gamma_true_full': gamma_full, 'track': track}
+    sample_length = Wv.shape[0]
+    num_J_vars = Wv.shape[1]
+    gamma_inv_oldformat = 4*construct_Gamma_full_real(gamma_inv_init[nz,:,:], 
+                        K, num_J_vars, invert=False)
+    inits = {
+        'Gamma_inv_init': gamma_inv_oldformat,
+        # 'Gamma_inv_init': true_init,
+        # 'Gamma_inv_init': sampletrue_init,
+        'mu': 0,
+        'Gamma_true': gamma_full
+        }
+
+    tapers = None
+    invQ = jnp.diag(jnp.ones(sample_length)*(1/obs_var))
+    invQs = [invQ for k in range(K)]
+
+    print(f'Correction to inverse conversion error: {inverse_correction}')
+    obs_oldorder = obs.swapaxes(0,-1)
+    obs_grouped = [obs_oldorder[:,None,k,:] for k in range(K)]
+    gamma_est, gamma_est_tapers, track = fit_gaussian_model(obs_grouped, Wv, inits, tapers, invQs, etype='approx', num_em_iters=mcfg.emiters, 
+                max_approx_iters=0, track=True, inverse_correction=inverse_correction)
+
+    method = 'scipy'
+    if inverse_correction is True:
+        method = 'scipy-oldmod'
+    else:
+        method = 'scipy-old'
+
+
+
+    # save flag so that can differentiate ts vs non ts runs
+    save_dict = {'ts_run': True, 'method': method, 'gamma': gamma_est, 'params': params, 'gamma_init': gamma_init, 'gamma_true_full': gamma_full, 'track': track}
+
+    # end
     return save_dict
+
+def load_old(mu=0.0, K=2, L=25, sample_length=1000, C=1, ov1=1.0, seed=8, etype="approx", hess_mod=False):
+    exp_path = '/projectnb/stephenlab/jtauber/cohlib/experiments/gaussian_observations'
+    ov2 = float(-1)
+    if hess_mod is True:
+        model_path = f'{exp_path}/saved/fitted_models/scale_hess_mod_jax_comp_simple_synthetic_gaussian_em20_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_{etype}.pkl'
+        model_load = pickle_open(model_path)
+    else:
+        model_path = f'{exp_path}/saved/fitted_models/scale_mod_jax_comp_simple_synthetic_gaussian_em20_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_{etype}.pkl'
+        model_load = pickle_open(model_path)
+
+    return model_load

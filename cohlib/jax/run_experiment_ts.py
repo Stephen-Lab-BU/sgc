@@ -9,8 +9,9 @@ from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.dists import sample_from_gamma, sample_obs, naive_estimator
 from cohlib.jax.observations import e_step_par, m_step, add0
 from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1
+from cohlib.jax.ts_gaussian import JvOExp
 
-def gen_data_and_fit_model(cfg):
+def gen_data_and_fit_model_ts(cfg, method):
 
     lcfg = cfg.latent
     ocfg = cfg.obs
@@ -165,26 +166,46 @@ def gen_data_and_fit_model(cfg):
               'nonzero_inds': nz}
     
     gamma_init = jnp.linalg.inv(gamma_inv_init[nz,:,:])
-    track = {'mus': [], 'gamma': [], 'Upss': []}
     print(f"Running EM for {mcfg.emiters} iters. Newton iters = {mcfg.maxiter}")
-    gamma_prev_inv = gamma_inv_init
-    for r in range(mcfg.emiters):
-        print(f'EM Iter {r+1}')
-        if mcfg.track_mus is True:
-            mus_all, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type, return_mus=True)
-            mus = mus_all[0]
-            mus_outer = mus_all[1]
-            track['mus'].append(mus)
-            track['Upss'].append(Upss)
-        else:
-            mus_outer, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type)
 
-        gamma_update = m_step(mus_outer, Upss)
+    decon_mod = True
+    print(f"Using method {method}. Decon mod is {decon_mod}.")
+    # TODO replace with JvOexperiment object
+    # start 
+    if method == 'jax':
+        params_model = {'freqs': freqs,
+                'nonzero_inds': nz}
+    elif method == 'old' or method == 'oldmod':
+        old_model_load = load_old()
+        Wv = old_model_load['Wv']
+        params_model = {'Wv': Wv, 'nonzero_inds': nz}
+    else:
+        raise NotImplementedError
 
-        gamma_prev_inv_model = jnp.linalg.inv(gamma_update)
-        gamma_prev_inv = jnp.zeros_like(gamma_full)
-        gamma_prev_inv = gamma_prev_inv.at[nz,:,:].set(gamma_prev_inv_model)
-        track['gamma'].append(gamma_update)
+    obs_var = obs_params['obs_var']
+    exp = JvOExp(obs, gamma_inv_init, obs_var, params_model, 'gaussian', method, track_em=True, decon_mod=decon_mod)
+    exp.run_em(mcfg.emiters)
 
-    save_dict = {'gamma': gamma_update, 'params': params, 'gamma_init': gamma_init, 'gamma_true_full': gamma_full, 'track': track}
+    gamma_est = jnp.linalg.inv(exp.gamma_inv[nz,:,:])
+
+
+    # save flag so that can differentiate ts vs non ts runs, method and decon_mod
+    if decon_mod is True:
+        method = f'{method}-deconmod'
+
+    save_dict = {'ts_run': True, 'method': method, 'gamma': gamma_est, 'params': params, 'gamma_init': gamma_init, 'gamma_true_full': gamma_full, 'track': exp}
+
+    # end
     return save_dict
+
+def load_old(mu=0.0, K=2, L=25, sample_length=1000, C=1, ov1=1.0, seed=8, etype="approx", hess_mod=False):
+    exp_path = '/projectnb/stephenlab/jtauber/cohlib/experiments/gaussian_observations'
+    ov2 = float(-1)
+    if hess_mod is True:
+        model_path = f'{exp_path}/saved/fitted_models/scale_hess_mod_jax_comp_simple_synthetic_gaussian_em20_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_{etype}.pkl'
+        model_load = pickle_open(model_path)
+    else:
+        model_path = f'{exp_path}/saved/fitted_models/scale_mod_jax_comp_simple_synthetic_gaussian_em20_{K}_{L}_{sample_length}_{C}_{mu}_{ov1}_{ov2}_{seed}_fitted_{etype}.pkl'
+        model_load = pickle_open(model_path)
+
+    return model_load

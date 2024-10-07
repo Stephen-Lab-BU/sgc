@@ -11,8 +11,8 @@ for o1 in 1
 do 
     for o2 in -3 -2 -1 0
     do 
-        python jax_comp_alg_gaussian_obs_fixed_gamma_scale_hess_mod.py 1000 25 2 1 0.0 $o1 $o2 20
-        python jax_comp_alg_gaussian_obs_fixed_gamma_scale_mod.py 1000 25 2 1 0.0 $o1 $o2 20
+        # python jax_comp_alg_gaussian_obs_fixed_gamma_scale_hess_mod.py 1000 25 2 1 0.0 $o1 $o2 20
+        python jax_comp_alg_gaussian_obs_fixed_gamma_scale_mod_test_correction.py 1000 25 2 1 0.0 $o1 $o2 20
         # python alg_gaussian_obs_fixed_gamma_confirm.py 1000 25 2 1 0.0 $o1 $o2 20
     done
 done

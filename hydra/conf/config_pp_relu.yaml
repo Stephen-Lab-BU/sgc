@@ -1,5 +1,5 @@
 defaults: 
-  - latent: full10
+  - latent: full_mt1
   - obs: pp_relu
   - model: full_support
 
@@ -7,6 +7,9 @@ latent:
   scale: 10000
 
 model:
-  init: 'true-init'
-  scale_init: 10000
-  true_to_flat: 'target'
+  init: 'empirical-init'
+  # init: 'empirical-diag-init'
+  # init: 'true-init'
+  # scale_init: 10000
+  # true_to_flat: 'target'
+  # init_mod: 0.01

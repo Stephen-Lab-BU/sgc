@@ -6,7 +6,7 @@ from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial
 
 from cohlib.utils import transform_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False, hess_mod=False):
+def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False, hess_mod=False, inverse_correction=False):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -69,7 +69,10 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
             # M-Step
             Gamma_update_complex, Sigma_complex = update_Gamma_complex(mus, Ups_invs, K, num_J_vars)
 
-            Gamma_prev_inv = construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=True)
+            if inverse_correction is True:
+                Gamma_prev_inv = construct_Gamma_full_real_corrected(Gamma_update_complex, K, num_J_vars, invert=True)
+            else:
+                Gamma_prev_inv = construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=True)
 
 
             if track is True:
@@ -153,6 +156,34 @@ def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False,
             Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
                 Gamma_n_real[:, kj : kj + 2]
             )
+
+    return Gamma_full
+
+def construct_Gamma_full_real_corrected(Gamma_update_complex, K, num_J_vars, invert=False, mu_only=False):
+    J = int(num_J_vars / 2)
+    Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
+    for j in range(J):
+        Gamma_n = Gamma_update_complex[j, :, :]
+        base_filt = np.zeros(num_J_vars)
+        j_var = int(j * 2)
+        base_filt[j_var : j_var + 2] = 1
+        j_filt = np.tile(base_filt.astype(bool), K)
+        if invert is True:
+            Gamma_inv_n = np.linalg.inv(Gamma_n)
+            Gamma_inv_n_real = reverse_rearrange_mat(4*transform_cov_c2r(Gamma_inv_n), K)
+            # print(j_filt)
+            for k in range(K):
+                kj = int(k * 2)
+                Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
+                    Gamma_inv_n_real[:, kj : kj + 2]
+                )
+        else:
+            Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n), K)
+            for k in range(K):
+                kj = int(k * 2)
+                Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
+                    Gamma_n_real[:, kj : kj + 2]
+                )
 
     return Gamma_full
 

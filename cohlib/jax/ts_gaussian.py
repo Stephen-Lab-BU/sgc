@@ -9,14 +9,14 @@ from cohlib.jax.dists import sample_from_gamma
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.conv import conv_v_to_z, conv_z_to_v
 from cohlib.alg.em_sgc import construct_Gamma_full_real, deconstruct_Gamma_full_real
-from cohlib.jax.observations import get_e_step_cost_func
+from cohlib.jax.observations import get_e_step_cost_func, m_step
 from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial, GaussianTrialMod
 
 from pathlib import Path
 from omegaconf import OmegaConf
 
-def load_results(paths, ovs_sel, **kwargs):
-    Lpaths = get_model_paths(paths, **kwargs)
+def load_results(paths, ovs_sel, ts_flag=False, **kwargs):
+    Lpaths = get_model_paths(paths, ts_flag, **kwargs)
     results = {}
     obs_vars = []
     for path in Lpaths:
@@ -44,29 +44,50 @@ def load_results(paths, ovs_sel, **kwargs):
 
     return results
 
-def get_model_paths(paths, **kwargs):
+def get_model_paths(paths, ts_flag, **kwargs):
     sel_paths = []
     for path in paths:
         _dir = Path(path)
         for i, exp in enumerate(_dir.glob('*')):
             cfg_path = os.path.join(exp, '.hydra/config.yaml')
             cfg = OmegaConf.load(cfg_path)
+            res_path = os.path.join(exp, 'res.pickle')
+            res = pickle_open(res_path)
 
-            if cfg.latent.L == kwargs['L']:
-                if cfg.model.emiters == kwargs['emiters']:
-                    if cfg.model.init == kwargs['init']:
-                        if cfg.model.scale_init == kwargs['scale_init']:
-                            if kwargs['supp'] is not None:
-                                if 'support' in list(cfg.model.keys()):
-                                    if cfg.model.support == kwargs['supp']:
-                                            sel_paths.append(exp)
-                            else:
-                                if 'support' not in list(cfg.model.keys()):
-                                    if cfg.model.emiters == kwargs['emiters']:
-                                        sel_paths.append(exp)
-                                else:
-                                    if cfg.model.support == kwargs['supp']:
-                                            sel_paths.append(exp)
+            ts = res.get('ts_run')
+            if ts is None:
+                ts = False
+
+            if ts is True:
+                method = res.get('method')
+                if method is None:
+                    method = 'jax'
+            else:
+                method = None
+
+
+            if ts == ts_flag:
+                if method == kwargs['method']:
+                    if cfg.latent.L == kwargs['L']:
+                        if cfg.model.emiters == kwargs['emiters']:
+                            if cfg.model.init == kwargs['init']:
+                                # print(f'cfg scale_init: {cfg.model.scale_init}' )
+                                # print(f'kwargs scale_init: {kwargs["scale_init"]}' )
+                                # print(f'method: {kwargs["method"]}')
+                                if cfg.model.scale_init == kwargs['scale_init']:
+                                    if kwargs['supp'] is not None:
+                                        if 'support' in list(cfg.model.keys()):
+                                            if cfg.model.support == kwargs['supp']:
+                                                    sel_paths.append(exp)
+                                    else:
+                                        if 'support' not in list(cfg.model.keys()):
+                                            if cfg.model.emiters == kwargs['emiters']:
+                                                sel_paths.append(exp)
+                                        else:
+                                            if cfg.model.support == kwargs['supp']:
+                                                    sel_paths.append(exp)
+                else:
+                    pass
     return sel_paths
 
 class OptimResult():
@@ -160,7 +181,18 @@ class OldOptim():
 
         invQ = jnp.diag(jnp.ones(sample_length)*(1/self.obs_var))
 
+        TrialData = TrialDataGaussian 
         obs_objs = [GaussianTrial(data[None,:,i], invQ) for i in range(self.K)] 
+        observations = obs_objs
+
+        gamma_inv_realrep = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
+                        self.K, self.num_J_vars)*4
+        trial_obj = TrialData(observations, gamma_inv_realrep, self.Wv)
+
+        self.cost_func = trial_obj.cost_func()
+        self.cost_grad = trial_obj.cost_grad()
+        self.cost_hess = trial_obj.cost_hess()
+
 
         gamma_inv_oldformat = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
                                 self.K, self.num_J_vars, invert=False)
@@ -181,7 +213,10 @@ class OldOptim():
         hess_full_real = self.cost_hess(vs_flat)
 
         grad = conv_grad_old_r2c(grad_real, self.K)
-        hess = deconstruct_Gamma_full_real(hess_full_real, self.K, self.num_J_vars)
+        if self.params['decon_mod'] is False:
+            hess = deconstruct_Gamma_full_real(hess_full_real, self.K, self.num_J_vars)
+        else: 
+            hess = deconstruct_Gamma_full_real_mod(hess_full_real, self.K, self.num_J_vars)
 
         return cost_real, grad, hess
 
@@ -223,6 +258,8 @@ class OldOptimMod():
         self.num_J_vars = self.Wv.shape[1]
         self.K = data.shape[1]
 
+        # print(f'Confirming decon-mod: {self.params["decon_mod"]}')
+
         if obs_type == 'gaussian':
             pass
         else:
@@ -236,7 +273,7 @@ class OldOptimMod():
         obs_objs = [GaussianTrial(data[None,:,i], invQ) for i in range(self.K)] 
         # gamma_inv_oldformat = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
                                 #  self.K, self.num_J_vars, invert=False)
-        gamma_inv_oldformat = 2*construct_Gamma_full_real_mod(self.gamma_inv[nz,:,:], 
+        gamma_inv_oldformat = 4*construct_Gamma_full_real_mod(self.gamma_inv[nz,:,:], 
                                 self.K, self.num_J_vars, invert=False)
         trial_obj = TrialDataGaussian(obs_objs, gamma_inv_oldformat, self.Wv)
 
@@ -255,8 +292,10 @@ class OldOptimMod():
         hess_full_real = self.cost_hess(vs_flat)
 
         grad = conv_grad_old_r2c(grad_real, self.K)
-        # hess = deconstruct_Gamma_full_real(hess_full_real, self.K, self.num_J_vars)
-        hess = deconstruct_Gamma_full_real_mod(hess_full_real, self.K, self.num_J_vars)
+        if self.params['decon_mod'] is False:
+            hess = deconstruct_Gamma_full_real(hess_full_real, self.K, self.num_J_vars)
+        else: 
+            hess = deconstruct_Gamma_full_real_mod(hess_full_real, self.K, self.num_J_vars)
 
         return cost_real, grad, hess
 
@@ -287,24 +326,29 @@ class OldOptimMod():
         self.result = result
 
 def construct_Gamma_full_real_mod(Gamma, K, num_J_vars, invert=False):
-    return construct_Gamma_full_real(Gamma, K, num_J_vars, invert=invert)*2
+    return construct_Gamma_full_real(Gamma, K, num_J_vars, invert=invert)
 
+# TODO test here - div by 2 or no?
 def deconstruct_Gamma_full_real_mod(Gamma, K, num_J_vars, invert=False):
     return deconstruct_Gamma_full_real(Gamma, K, num_J_vars, invert=invert)/2
 
 class JvOExp():
-    def __init__(self, obs, gamma_inv, obs_var, params, obs_type, method, track=False):
+    def __init__(self, obs, gamma_inv, obs_var, params, obs_type, method, track_optim=False, track_em=False, decon_mod=False):
         self.obs = obs
         self.gamma_inv = gamma_inv
         self.params = params
         self.params['obs'] = {'obs_var': obs_var}
         self.params['obs_var'] = obs_var
+        self.params['decon_mod'] = decon_mod
         self.obs_type = obs_type
         self.method = method
-        self.Nnz = params['nonzero_inds'].size
+        self.nz = params['nonzero_inds']
+        self.Nnz = self.nz.size
         self.K = obs.shape[1]
-        self.track = track
-        self.track_data = {}
+        self.track_optim = track_optim
+        self.track_em = track_em
+        self.track_em_data = {'gamma': [], 'mus': [], 'Upss': []}
+        self.track_optim_data = {}
 
 
     def eval_cost(self, trial, zs=None):
@@ -348,13 +392,31 @@ class JvOExp():
             else:
                 raise ValueError
 
-            optim = optimizer(trial_data, self.gamma_inv, self.params, self.obs_type, self.track)
+            optim = optimizer(trial_data, self.gamma_inv, self.params, self.obs_type, self.track_optim)
             optim.run_e_step(zs_init, num_iters)
-            if self.track is True:
-                self.track_data[trial] = optim.result
+            if self.track_optim is True:
+                self.track_optim_data[trial] = optim.result
 
             mus = mus.at[:,:,trial].set(optim.result.zs_est)
-            Upss = Upss.at[:,:,:,trial].set(optim.result.hess)
+            Upss = Upss.at[:,:,:,trial].set(jnp.linalg.inv(optim.result.hess))
 
         self.mus = mus
         self.Upss = Upss
+
+    def run_em(self, num_em_iters, num_optim_iters=10):
+        
+        for r in range(num_em_iters):
+            gamma_update_inv = jnp.zeros_like(self.gamma_inv)
+            self.e_step(num_optim_iters)
+            mus_outer = jnp.einsum('jkl,jil->jkil', self.mus, self.mus.conj())
+            Upss = self.Upss
+            gamma_update = m_step(mus_outer, Upss)
+            gamma_update_inv = gamma_update_inv.at[self.nz,:,:].set(jnp.linalg.inv(gamma_update))
+
+            self.gamma_inv = gamma_update_inv
+
+            if self.track_em is True:
+                self.track_em_data['gamma'].append(gamma_update)
+                self.track_em_data['mus'].append(self.mus)
+                self.track_em_data['Upss'].append(self.Upss)
+        

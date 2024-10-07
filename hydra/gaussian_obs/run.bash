@@ -1,7 +1,7 @@
 
 for init in true-init 
 do
-    for L in 1000
+    for L in 10 50 100
     do 
         for ov2 in 0 3
         do
@@ -16,7 +16,7 @@ done
 
 for init in flat-init
 do
-    for L in 10 50 100 1000
+    for L in 10 50 100 
     do 
         for ov2 in -5 -3 0 3
         do

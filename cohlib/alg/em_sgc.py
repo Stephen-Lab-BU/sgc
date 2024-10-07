@@ -287,18 +287,13 @@ def update_Gamma_complex_regularized(mus, Ups_invs, K, num_J_vars, rho, kappa):
 
     return Gamma_update_complex
 
-
-def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False, mu_only=False):
+def construct_Gamma_full_real2(Gamma_complex, K, num_J_vars):
     J = int(num_J_vars / 2)
     Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
     for j in range(J):
-        Gamma_n = Gamma_update_complex[j, :, :]
-        if invert is True:
-            if mu_only is True:
-                Gamma_n = np.linalg.pinv(Gamma_n)
-            else:
-                Gamma_n = np.linalg.inv(Gamma_n)
-        Gamma_n_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_n), K)
+        Gamma_j = Gamma_complex[j, :, :]
+
+        Gamma_j_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_j), K)
         base_filt = np.zeros(num_J_vars)
         j_var = int(j * 2)
         base_filt[j_var : j_var + 2] = 1
@@ -307,15 +302,35 @@ def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False,
         for k in range(K):
             kj = int(k * 2)
             Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
-                Gamma_n_real[:, kj : kj + 2]
+                Gamma_j_real[:, kj : kj + 2]
+            )
+
+    return Gamma_full
+
+
+def construct_Gamma_full_real(Gamma_update_complex, K, num_J_vars, invert=False):
+    J = int(num_J_vars / 2)
+    Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
+    for j in range(J):
+        Gamma_j = Gamma_update_complex[j, :, :]
+        if invert is True:
+            Gamma_j = np.linalg.inv(Gamma_j)
+        Gamma_j_real = reverse_rearrange_mat(transform_cov_c2r(Gamma_j), K)
+        base_filt = np.zeros(num_J_vars)
+        j_var = int(j * 2)
+        base_filt[j_var : j_var + 2] = 1
+        j_filt = np.tile(base_filt.astype(bool), K)
+        # print(j_filt)
+        for k in range(K):
+            kj = int(k * 2)
+            Gamma_full[j_filt, k * num_J_vars + j_var : k * num_J_vars + j_var + 2] = (
+                Gamma_j_real[:, kj : kj + 2]
             )
 
     return Gamma_full
 
 def deconstruct_Gamma_full_real(Gamma_full_real, K, num_J_vars, invert=False):
     J = int(num_J_vars / 2)
-    # Gamma_full = np.zeros((K * num_J_vars, K * num_J_vars))
-    # Gamma_real = np.zeros((J,2*K,2*K))
     Gamma_reduced_real = np.zeros((J, 2*K, 2*K))
     base_filt = np.zeros(num_J_vars)
 
@@ -332,7 +347,7 @@ def deconstruct_Gamma_full_real(Gamma_full_real, K, num_J_vars, invert=False):
             Gamma_reduced_real[j,:,kj:kj+2] = Gamma_full_real[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2]
 
     Gamma_complex = np.stack([transform_cov_r2c(reverse_rearrange_mat(Gamma_reduced_real[j,:,:],K)) for j in range(J)])
-    if invert == True:
+    if invert is True:
         Gamma_complex = np.stack([np.linalg.inv(Gamma_complex[j,:,:]) for j in range(J)])
 
     return Gamma_complex
