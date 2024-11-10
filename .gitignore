@@ -19,6 +19,12 @@ hydra/gaussian_obs/outputs
 hydra/pp_relu_obs/outputs
 hydra/pp_log_obs/outputs
 hydra/gaussian_obs/ts_output
+hydra/debug_gaussian_obs/outputs
+hydra/debug_pprelu_obs/outputs
+hydra/debug_pprelu_obs/batch_submit
+hydra/debug_gaussian_obs/saved_outputs
+hydra/debug_gaussian_obs/batch_submit
+hydra/debug_gaussian_obs/archive
 hydra/archive
 hydra/batch_submit
 hydra/gammas

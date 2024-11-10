@@ -8,7 +8,7 @@ from cohlib.jax.dists import sample_from_gamma
 
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.conv import conv_v_to_z, conv_z_to_v
-from cohlib.alg.em_sgc import construct_Gamma_full_real, deconstruct_Gamma_full_real
+from cohlib.alg.em_gaussian_obs import construct_Gamma_full_real, deconstruct_Gamma_full_real
 from cohlib.jax.observations import get_e_step_cost_func, m_step
 from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial, GaussianTrialMod
 
@@ -99,14 +99,20 @@ class OptimResult():
         self.track_grad = track_grad
         self.track_hess = track_hess
 
+class OptimResultReal():
+    def __init__(self, vs_est, hess_real):
+        self.vs_est = vs_est
+        self.hess_real = hess_real
+
 class JaxOptim():
-    def __init__(self, data, gamma_inv, params, obs_type, track=False):
+    def __init__(self, data, gamma_inv, params, obs_type, optim_method, track=False):
         self.data = data
         self.gamma_inv = gamma_inv
         self.params = params
         self.nz = params['nonzero_inds']
         self.Nnz = self.nz.size
         self.track = track
+        self.optim_method = optim_method
         if 'zs_flattened' in params.keys():
             self.zs_flattened = params['zs_flattened']
         else:
@@ -124,7 +130,7 @@ class JaxOptim():
 
         return cost, grad.conj(), hess_sel
 
-    def run_e_step(self, zs_init, num_iters):
+    def run_e_step(self, zs_init, num_iters, step_size=1e-3):
         zs_est = zs_init
         if self.track is True:
             track_zs = [zs_init]
@@ -132,11 +138,24 @@ class JaxOptim():
             track_grad = []
             track_hess = []
 
-        for _ in range(num_iters):
-            cost, grad, hess = self.eval_cost(zs_est)
-            hess_inv = jnp.linalg.inv(hess)
 
-            zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_inv, grad)
+        for _ in range(num_iters):
+
+            if self.optim_method == 'Newton':
+                cost, grad, hess = self.eval_cost(zs_est)
+                hess_inv = jnp.linalg.inv(hess)
+                zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_inv, grad)
+            elif self.optim_method == 'NewtonMod':
+                cost, grad, hess = self.eval_cost(zs_est)
+                hess = 2*hess
+                hess_inv = jnp.linalg.inv(hess)
+                zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_inv, grad)
+            elif self.optim_method == 'GD':
+                cost, grad, hess = self.eval_cost(zs_est)
+                zs_est = zs_est - step_size * grad
+            else:
+                raise NotImplementedError
+
             if self.track is True:
                 track_zs.append(zs_est)
                 track_cost.append(cost)
@@ -156,11 +175,16 @@ def conv_grad_old_r2c(grad_vec_real, K):
     grad_vec_complex = conv_v_to_z(rs, axis=0)
     return grad_vec_complex
 
-conv_mus_old_r2c = conv_grad_old_r2c
+def conv_mu_new_c2r(mu_mat_complex, K):
+    mu_v = conv_z_to_v(mu_mat_complex[:,:], axis=0)
+    mu_v_flat = jnp.concatenate([mu_v[:,k] for k in range(K)])
+    return mu_v_flat
+
+conv_mu_old_r2c = conv_grad_old_r2c
 
 
 class OldOptim():
-    def __init__(self, data, gamma_inv, params, obs_type, track=False):
+    def __init__(self, data, gamma_inv, params, obs_type, optim_method, track=False):
         self.data = data
         self.gamma_inv = gamma_inv
         self.params = params
@@ -170,93 +194,10 @@ class OldOptim():
         self.Wv = params['Wv']
         self.num_J_vars = self.Wv.shape[1]
         self.K = data.shape[1]
+        self.mod_to_fix = self.params['mod_to_fix']
 
-        if obs_type == 'gaussian':
-            pass
-        else:
+        if optim_method != 'Newton':
             raise NotImplementedError
-
-        nz = params['nonzero_inds']
-        sample_length = self.Wv.shape[0]
-
-        invQ = jnp.diag(jnp.ones(sample_length)*(1/self.obs_var))
-
-        TrialData = TrialDataGaussian 
-        obs_objs = [GaussianTrial(data[None,:,i], invQ) for i in range(self.K)] 
-        observations = obs_objs
-
-        gamma_inv_realrep = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
-                        self.K, self.num_J_vars)*4
-        trial_obj = TrialData(observations, gamma_inv_realrep, self.Wv)
-
-        self.cost_func = trial_obj.cost_func()
-        self.cost_grad = trial_obj.cost_grad()
-        self.cost_hess = trial_obj.cost_hess()
-
-
-        gamma_inv_oldformat = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
-                                self.K, self.num_J_vars, invert=False)
-        trial_obj = TrialDataGaussian(obs_objs, gamma_inv_oldformat, self.Wv)
-
-        self.cost_func = trial_obj.cost_func()
-        self.cost_grad = trial_obj.cost_grad()
-        self.cost_hess = trial_obj.cost_hess()
-
-        self.optim_result = None
-
-    def eval_cost(self, zs):
-        vs = conv_z_to_v(zs, axis=0)
-        vs_flat = jnp.concatenate([vs[:,k] for k in range(self.K)])
-
-        cost_real = self.cost_func(vs_flat)
-        grad_real = self.cost_grad(vs_flat)
-        hess_full_real = self.cost_hess(vs_flat)
-
-        grad = conv_grad_old_r2c(grad_real, self.K)
-        if self.params['decon_mod'] is False:
-            hess = deconstruct_Gamma_full_real(hess_full_real, self.K, self.num_J_vars)
-        else: 
-            hess = deconstruct_Gamma_full_real_mod(hess_full_real, self.K, self.num_J_vars)
-
-        return cost_real, grad, hess
-
-    def run_e_step(self, zs_init, num_iters):
-        zs_est = zs_init
-        if self.track is True:
-            track_zs = [zs_init]
-            track_cost = []
-            track_grad = []
-            track_hess = []
-
-        for _ in range(num_iters):
-            cost, grad, hess = self.eval_cost(zs_est)
-            hess_inv = jnp.linalg.inv(hess)
-
-            zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_inv, grad)
-            if self.track is True:
-                track_zs.append(zs_est)
-                track_cost.append(cost)
-                track_grad.append(grad) 
-                track_hess.append(hess) 
-
-
-        if self.track is True:
-            result = OptimResult(zs_est, hess, track_zs, track_cost, track_grad, track_hess)
-        else:
-            result = OptimResult(zs_est, hess)
-        self.result = result
-
-class OldOptimMod():
-    def __init__(self, data, gamma_inv, params, obs_type, track=False):
-        self.data = data
-        self.gamma_inv = gamma_inv
-        self.params = params
-        self.track = track
-
-        self.obs_var = params['obs_var']
-        self.Wv = params['Wv']
-        self.num_J_vars = self.Wv.shape[1]
-        self.K = data.shape[1]
 
         # print(f'Confirming decon-mod: {self.params["decon_mod"]}')
 
@@ -271,10 +212,12 @@ class OldOptimMod():
         invQ = jnp.diag(jnp.ones(sample_length)*(1/self.obs_var))
 
         obs_objs = [GaussianTrial(data[None,:,i], invQ) for i in range(self.K)] 
-        # gamma_inv_oldformat = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
-                                #  self.K, self.num_J_vars, invert=False)
-        gamma_inv_oldformat = 4*construct_Gamma_full_real_mod(self.gamma_inv[nz,:,:], 
-                                self.K, self.num_J_vars, invert=False)
+        if self.mod_to_fix is True:
+            gamma_inv_oldformat = 4*construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
+                                    self.K, self.num_J_vars, invert=False)
+        else:
+            gamma_inv_oldformat = construct_Gamma_full_real(self.gamma_inv[nz,:,:], 
+                                    self.K, self.num_J_vars, invert=False)
         trial_obj = TrialDataGaussian(obs_objs, gamma_inv_oldformat, self.Wv)
 
         self.cost_func = trial_obj.cost_func()
@@ -297,7 +240,8 @@ class OldOptimMod():
         else: 
             hess = deconstruct_Gamma_full_real_mod(hess_full_real, self.K, self.num_J_vars)
 
-        return cost_real, grad, hess
+        # return cost_real, grad, hess
+        return cost_real, grad, hess, hess_full_real
 
     def run_e_step(self, zs_init, num_iters):
         zs_est = zs_init
@@ -308,7 +252,8 @@ class OldOptimMod():
             track_hess = []
 
         for _ in range(num_iters):
-            cost, grad, hess = self.eval_cost(zs_est)
+            # cost, grad, hess = self.eval_cost(zs_est)
+            cost, grad, hess, hess_real = self.eval_cost(zs_est)
             hess_inv = jnp.linalg.inv(hess)
 
             zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_inv, grad)
@@ -324,6 +269,8 @@ class OldOptimMod():
         else:
             result = OptimResult(zs_est, hess)
         self.result = result
+        vs_est = conv_mu_new_c2r(zs_est, self.K)
+        self.result_real = OptimResultReal(vs_est, hess_real)
 
 def construct_Gamma_full_real_mod(Gamma, K, num_J_vars, invert=False):
     return construct_Gamma_full_real(Gamma, K, num_J_vars, invert=invert)
@@ -333,10 +280,12 @@ def deconstruct_Gamma_full_real_mod(Gamma, K, num_J_vars, invert=False):
     return deconstruct_Gamma_full_real(Gamma, K, num_J_vars, invert=invert)/2
 
 class JvOExp():
-    def __init__(self, obs, gamma_inv, obs_var, params, obs_type, method, track_optim=False, track_em=False, decon_mod=False):
+    def __init__(self, obs, gamma_inv, obs_var, params, obs_type, method, track_optim=False, track_em=False, track_realrep=False, decon_mod=False, optim_method='Newton'):
+    # def __init__(self, obs, gamma_inv, obs_var, params, obs_type, method, track_optim=False, track_em=False, decon_mod=False, track_real=False):
         self.obs = obs
         self.gamma_inv = gamma_inv
         self.params = params
+        # TODO clean this silliness up 
         self.params['obs'] = {'obs_var': obs_var}
         self.params['obs_var'] = obs_var
         self.params['decon_mod'] = decon_mod
@@ -347,25 +296,28 @@ class JvOExp():
         self.K = obs.shape[1]
         self.track_optim = track_optim
         self.track_em = track_em
-        self.track_em_data = {'gamma': [], 'mus': [], 'Upss': []}
+        self.track_em_data = {'gamma': [], 'mus': [], 'Upss': [], 'mus_real': [], 'hessians_real': []}
         self.track_optim_data = {}
+        self.track_realrep = track_realrep
+        self.optim_method = optim_method
 
+        if self.method == 'jax':
+            self.optimizer = JaxOptim
+        elif self.method == 'old':
+            self.optimizer = OldOptim
+            self.params['mod_to_fix'] = False
+        elif self.method == 'oldmod':
+            self.optimizer = OldOptim
+            self.params['mod_to_fix'] = True
+        else:
+            raise ValueError
 
     def eval_cost(self, trial, zs=None):
         if zs is None:
             zs = jnp.zeros((self.Nnz, self.K), dtype=complex)
 
         trial_data = self.obs[:,:,trial]
-        if self.method == 'jax':
-            optimizer = JaxOptim
-        elif self.method == 'old':
-            optimizer = OldOptim
-        elif self.method == 'oldmod':
-                optimizer = OldOptimMod
-        else:
-            raise ValueError
-
-        optim = optimizer(trial_data, self.gamma_inv, self.params, self.obs_type)
+        optim = self.optimizer(trial_data, self.gamma_inv, self.params, self.obs_type, self.optim_method)
         cost, grad, hess = optim.eval_cost(zs)
         return cost, grad, hess
 
@@ -381,27 +333,33 @@ class JvOExp():
         mus = jnp.zeros((self.Nnz,K,L), dtype=complex)
         Upss = jnp.zeros((self.Nnz,K,K,L), dtype=complex)
 
+        if self.track_realrep:
+            num_J_vars = int(Nnz * 2)
+            mus_real = jnp.zeros((L, K*num_J_vars))
+            hessians_real = jnp.zeros((L, K*num_J_vars, K*num_J_vars))
+
         for trial in tqdm(range(L)):
             trial_data = self.obs[:,:,trial]
-            if self.method == 'jax':
-                optimizer = JaxOptim
-            elif self.method == 'old':
-                optimizer = OldOptim
-            elif self.method == 'oldmod':
-                optimizer = OldOptimMod
-            else:
-                raise ValueError
 
-            optim = optimizer(trial_data, self.gamma_inv, self.params, self.obs_type, self.track_optim)
+            optim = self.optimizer(trial_data, self.gamma_inv, self.params, self.obs_type, self.optim_method, self.track_optim)
             optim.run_e_step(zs_init, num_iters)
             if self.track_optim is True:
                 self.track_optim_data[trial] = optim.result
 
             mus = mus.at[:,:,trial].set(optim.result.zs_est)
+
+            # NOTE so we get the Hessian here, and then invert for Upsilon - is there anything we should be worried about if there is no c2r/r2c conversion happening?
             Upss = Upss.at[:,:,:,trial].set(jnp.linalg.inv(optim.result.hess))
+
+            if self.track_realrep is True:
+                mus_real = mus_real.at[trial,:].set(optim.result_real.vs_est)
+                hessians_real = hessians_real.at[trial,:,:].set(optim.result_real.hess_real)
 
         self.mus = mus
         self.Upss = Upss
+        if self.track_realrep is True:
+            self.mus_real = mus_real
+            self.hessians_real = hessians_real
 
     def run_em(self, num_em_iters, num_optim_iters=10):
         
@@ -419,4 +377,7 @@ class JvOExp():
                 self.track_em_data['gamma'].append(gamma_update)
                 self.track_em_data['mus'].append(self.mus)
                 self.track_em_data['Upss'].append(self.Upss)
+                if self.track_realrep is True:
+                    self.track_em_data['mus_real'].append(self.mus_real)
+                    self.track_em_data['hessians_real'].append(self.hessians_real)
         

@@ -2,6 +2,7 @@ init: true-init
 init_mod: 1
 maxiter: 5
 emiters: 10
-scale_init: 0.01
+scale_init: 1
 support: null
 track_mus: true
+m_step_mod: 'none'

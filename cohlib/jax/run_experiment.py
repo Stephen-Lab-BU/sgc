@@ -8,7 +8,7 @@ import jax.random as jr
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.dists import sample_from_gamma, sample_obs, naive_estimator
 from cohlib.jax.observations import e_step_par, m_step, add0
-from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1
+from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1, k2_flat, k2_full_testri
 
 def gen_data_and_fit_model(cfg):
 
@@ -23,6 +23,13 @@ def gen_data_and_fit_model(cfg):
     if cfg.latent.gamma == 'k2-single-10':
         gamma_path = os.path.join(gamma_root(), f"{lcfg.gamma}.pickle")
         gamma_load = pickle_open(gamma_path)
+    elif lcfg.gamma == 'k2-flat':
+        flow = lcfg.freq_low
+        fhigh = lcfg.freq_high
+        scale_power = lcfg.scale_power
+        k2_flat(flow, fhigh, scale_power)
+        gamma_path = os.path.join(gamma_root(), f"k2-flat{flow}-{fhigh}-{scale_power}.pickle")
+        gamma_load = pickle_open(gamma_path)
     elif lcfg.gamma == 'k2-full-10':
         flow = lcfg.freq_low
         fhigh = lcfg.freq_high
@@ -30,6 +37,14 @@ def gen_data_and_fit_model(cfg):
         sp_offtarget = lcfg.scale_power_offtarget
         k2_full(flow, fhigh, sp_target, sp_offtarget)
         gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}.pickle")
+        gamma_load = pickle_open(gamma_path)
+    elif lcfg.gamma == 'k2-full-10-testri':
+        flow = lcfg.freq_low
+        fhigh = lcfg.freq_high
+        sp_target = lcfg.scale_power_target
+        sp_offtarget = lcfg.scale_power_offtarget
+        k2_full_testri(flow, fhigh, sp_target, sp_offtarget)
+        gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}_testri.pickle")
         gamma_load = pickle_open(gamma_path)
     elif lcfg.gamma == 'k2-full-multitarget1':
         flow = lcfg.freq_low
@@ -159,10 +174,18 @@ def gen_data_and_fit_model(cfg):
             gamma_inv_init = jnp.stack([jnp.eye(K, dtype=complex) for _ in range(Nnz)])*(1/mcfg.scale_init)
         else:
             raise NotImplementedError
+
+    m_step_mod = mcfg.m_step_mod
+    if m_step_mod == 'double-Ups-conj-hess':
+        conj_hess = True
+    else:
+        conj_hess = False
         
     params = {'obs': obs_params,
               'freqs': freqs,
-              'nonzero_inds': nz}
+              'nonzero_inds': nz,
+              'm_step_mod': m_step_mod,
+              'conj_hess': conj_hess}
     
     gamma_init = jnp.linalg.inv(gamma_inv_init[nz,:,:])
     track = {'mus': [], 'gamma': [], 'Upss': []}
@@ -171,15 +194,22 @@ def gen_data_and_fit_model(cfg):
     for r in range(mcfg.emiters):
         print(f'EM Iter {r+1}')
         if mcfg.track_mus is True:
-            mus_all, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type, return_mus=True)
+            mus_all, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type, return_mus=True, conj_hess=conj_hess)
             mus = mus_all[0]
             mus_outer = mus_all[1]
             track['mus'].append(mus)
             track['Upss'].append(Upss)
         else:
-            mus_outer, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type)
+            mus_outer, Upss = e_step_par(obs, gamma_prev_inv, params, obs_type, conj_hess=conj_hess)
 
-        gamma_update = m_step(mus_outer, Upss)
+        if m_step_mod == 'double-Ups':
+            gamma_update = m_step(mus_outer, 2*Upss)
+        elif m_step_mod == 'double-Ups-conj-hess':
+            gamma_update = m_step(mus_outer, 2*Upss)
+        elif m_step_mod == 'none':
+            gamma_update = m_step(mus_outer, Upss)
+        else:
+            raise NotImplementedError
 
         gamma_prev_inv_model = jnp.linalg.inv(gamma_update)
         gamma_prev_inv = jnp.zeros_like(gamma_full)

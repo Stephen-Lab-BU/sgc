@@ -8,7 +8,7 @@ import jax.random as jr
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.dists import sample_from_gamma, sample_obs, naive_estimator
 from cohlib.jax.observations import e_step_par, m_step, add0
-from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1, k2_flat, k2_full_testri
+from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1, k2_flat
 from cohlib.jax.ts_gaussian import JvOExp
 
 def gen_data_and_fit_model_ts(cfg, method):
@@ -38,14 +38,6 @@ def gen_data_and_fit_model_ts(cfg, method):
         sp_offtarget = lcfg.scale_power_offtarget
         k2_full(flow, fhigh, sp_target, sp_offtarget)
         gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}.pickle")
-        gamma_load = pickle_open(gamma_path)
-    elif lcfg.gamma == 'k2-full-10-testri':
-        flow = lcfg.freq_low
-        fhigh = lcfg.freq_high
-        sp_target = lcfg.scale_power_target
-        sp_offtarget = lcfg.scale_power_offtarget
-        k2_full_testri(flow, fhigh, sp_target, sp_offtarget)
-        gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}_testri.pickle")
         gamma_load = pickle_open(gamma_path)
     elif lcfg.gamma == 'k2-full-multitarget1':
         flow = lcfg.freq_low
@@ -176,6 +168,9 @@ def gen_data_and_fit_model_ts(cfg, method):
         else:
             raise NotImplementedError
         
+    params = {'obs': obs_params,
+              'freqs': freqs,
+              'nonzero_inds': nz}
     
     gamma_init = jnp.linalg.inv(gamma_inv_init[nz,:,:])
     print(f"Running EM for {mcfg.emiters} iters. Newton iters = {mcfg.maxiter}")
@@ -186,7 +181,7 @@ def gen_data_and_fit_model_ts(cfg, method):
     # start 
     if method == 'jax':
         params_model = {'freqs': freqs,
-                        'nonzero_inds': nz}
+                'nonzero_inds': nz}
         track_realrep = False
     elif method == 'old' or method == 'oldmod':
         old_model_load = load_old()
@@ -196,14 +191,8 @@ def gen_data_and_fit_model_ts(cfg, method):
     else:
         raise NotImplementedError
 
-    if obs_type == 'gaussian':
-        from cohlib.jax.ts_gaussian import JvOExp
-        obs_var = obs_params['obs_var']
-        exp = JvOExp(obs, gamma_inv_init, obs_var, params_model, 'gaussian', method, track_em=True, track_realrep=track_realrep, decon_mod=decon_mod)
-    elif obs_type == 'pp_relu':
-        from cohlib.jax.ts_pp import JvOExp
-        params_model['alpha'] = ocfg.alpha
-        exp = JvOExp(obs, gamma_inv_init, params_model, 'pp_relu', method, track_em=True, track_realrep=track_realrep, decon_mod=decon_mod)
+    obs_var = obs_params['obs_var']
+    exp = JvOExp(obs, gamma_inv_init, obs_var, params_model, 'gaussian', method, track_em=True, track_realrep=track_realrep, decon_mod=decon_mod)
     exp.run_em(mcfg.emiters)
 
     gamma_est = jnp.linalg.inv(exp.gamma_inv[nz,:,:])
@@ -212,10 +201,6 @@ def gen_data_and_fit_model_ts(cfg, method):
     # save flag so that can differentiate ts vs non ts runs, method and decon_mod
     if decon_mod is True:
         method = f'{method}-deconmod'
-
-    params = {'obs': obs_params,
-            'freqs': freqs,
-            'nonzero_inds': nz}
 
     save_dict = {'ts_run': True, 'method': method, 'gamma': gamma_est, 'params': params, 'gamma_init': gamma_init, 'gamma_true_full': gamma_full, 'track': exp}
 

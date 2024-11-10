@@ -2,11 +2,20 @@ import itertools
 import numpy as np
 from scipy.linalg import block_diag
 
-from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial
+# from cohlib.alg.laplace_gaussian_obs import TrialDataGaussian, GaussianTrial
+from cohlib.alg.laplace_sgc import TrialData, SpikeTrialDeltaLogPoisson, SpikeTrialDeltaReLUPoisson, SpikeTrialDeltaIDPoisson, SpikeTrialBernoulli
 
-from cohlib.utils import transform_cov_r2c, transform_cov_c2r, rearrange_mat, reverse_rearrange_mat
+from cohlib.utils import (
+    transform_cov_r2c,
+    transform_cov_c2r,
+    rearrange_mat,
+    reverse_rearrange_mat,
+)
 
-def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False, hess_mod=False, inverse_correction=False):
+# def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_iters=10, max_approx_iters=10, track=False, jax_m_step=False, inverse_correction=False):
+def fit_pp_model(
+    data, W, inits, tapers, num_em_iters=10, max_approx_iters=10, track=False, inverse_correction=False
+):
     # safety / params
     assert isinstance(data, list)
     K = len(data)
@@ -18,9 +27,9 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
 
     # inits
     Gamma_inv_init = inits['Gamma_inv_init']
-
-    if hess_mod is True:
-        print("Hessian computation will be modified.")
+    params = inits["params"]
+    obs_model = inits["obs_model"]
+    optim_type = inits["optim_type"]
 
     track_tapers = []
     Gamma_est_tapers = []
@@ -50,20 +59,15 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
 
             for l in range(L):
                 # print(f'Laplace Approx trial {l}')
-                trial = get_gaussian_trial_obj(data, invQs, l, W, Gamma_prev_inv, taper=taper)
-                if etype == 'approx':
-                    mu, negUps_inv = trial.laplace_approx(max_approx_iters)
-                elif etype == 'analytical':
-                    mu, negUps_inv = trial.compute_estep_analytical()
-                else:
-                    raise ValueError
+                # trial = get_gaussian_trial_obj(data, invQs, l, W, Gamma_prev_inv, taper=taper)
+                trial = get_trial_obj(
+                    data, l, W, Gamma_prev_inv, params, taper=taper, obs_model=obs_model, optim_type=optim_type)
+                mu, negUps_inv = trial.laplace_approx(max_approx_iters)
 
                 # real reprsentation
                 mus[l,:] = mu
-                if hess_mod is True:
-                    Ups_invs[l,:,:] = -negUps_inv / 2
-                else:
-                    Ups_invs[l,:,:] = -negUps_inv
+                # TODO yikes - make sure laplace_gauss and laplace_spikes match with this stuff
+                Ups_invs[l,:,:] = -negUps_inv
 
 
             # M-Step
@@ -93,6 +97,26 @@ def fit_gaussian_model(data, W, inits, tapers, invQs, etype='approx', num_em_ite
         return Gamma_est, Gamma_est_tapers, track_tapers
     else:
         return Gamma_est, Gamma_est_tapers, None
+def get_trial_obj(data, l, W, Gamma_inv_prev, params, taper, obs_model, optim_type):
+    """
+    data is list of spike data (trial x neurons x time)
+    """
+    if obs_model == "bernoulli":
+        SpikeTrial = SpikeTrialBernoulli
+    elif obs_model == "poisson-log-delta":
+        SpikeTrial = SpikeTrialDeltaLogPoisson
+    elif obs_model == "poisson-relu-delta":
+        SpikeTrial = SpikeTrialDeltaReLUPoisson
+    elif obs_model == "poisson-id-delta":
+        SpikeTrial = SpikeTrialDeltaIDPoisson
+    else:
+        raise ValueError
+    trial_data = [group_data[l, :, :] for group_data in data]
+    spike_objs = [
+        SpikeTrial(data, params[k], taper) for k, data in enumerate(trial_data)
+    ]
+    trial_obj = TrialData(spike_objs, Gamma_inv_prev, W, params, obs_model, optim_type)
+    return trial_obj 
 
 def update_Gamma_complex(mus, Ups_invs, K, num_J_vars):
     """
@@ -270,17 +294,6 @@ def construct_Gamma_full_real_corrected(Gamma_update_complex, K, num_J_vars, inv
 
 
 
-def get_gaussian_trial_obj(data, invQs, l, W, Gamma_inv_prev, taper):
-    """
-    data is list of length K 
-    each entry is group data (trial x neurons x time)
-    """
-    trial_data = [group_data[l,:,:] for group_data in data]
-    observation_objs = [GaussianTrial(data, invQs[k], taper) for k, data in enumerate(trial_data)]
-    trial_obj = TrialDataGaussian(observation_objs, Gamma_inv_prev, W)
-    return trial_obj
-
-
 def get_freq_vecs_real(vec, K,num_J_vars):
     j_vecs = []
     for jv in range(0,num_J_vars,2):
@@ -306,29 +319,6 @@ def get_freq_vecs_real_dc(vec, K, num_J_vars):
         vec_j = vec[j_filt]
         j_vecs.append(vec_j)
     return j_vecs
-
-def deconstruct_Gamma_full_real(Gamma_full_real, K, num_J_vars, invert=False):
-    J = int(num_J_vars / 2)
-    Gamma_reduced_real = np.zeros((J, 2*K, 2*K))
-    base_filt = np.zeros(num_J_vars)
-
-    for j in range(J):
-        j_var = int(j*2)
-        base_filt = np.zeros(num_J_vars)
-        base_filt[j_var:j_var+2] = 1
-        j_filt = np.tile(base_filt.astype(bool), K)
-        # print(j_filt)
-
-        for k in range(K):
-            kj = int(k*2)
-            # Gamma_full[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2] = Gamma_n_real[:,kj:kj+2]
-            Gamma_reduced_real[j,:,kj:kj+2] = Gamma_full_real[j_filt,k*num_J_vars+j_var:k*num_J_vars+j_var+2]
-
-    Gamma_complex = np.stack([transform_cov_r2c(reverse_rearrange_mat(Gamma_reduced_real[j,:,:],K)) for j in range(J)])
-    if invert is True:
-        Gamma_complex = np.stack([np.linalg.inv(Gamma_complex[j,:,:]) for j in range(J)])
-
-    return Gamma_complex
 
 
 

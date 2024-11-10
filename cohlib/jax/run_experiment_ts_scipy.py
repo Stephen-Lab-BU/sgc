@@ -8,10 +8,10 @@ import jax.random as jr
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.dists import sample_from_gamma, sample_obs, naive_estimator
 from cohlib.alg.em_gaussian_obs import fit_gaussian_model
-from cohlib.jax.observations import e_step_par, m_step, add0
-from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1
-from cohlib.jax.ts_gaussian import JvOExp
-from cohlib.alg.em_sgc import construct_Gamma_full_real, deconstruct_Gamma_full_real
+from cohlib.alg.em_pp_obs import fit_pp_model
+from cohlib.jax.observations import add0
+from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1, k2_flat, k2_full_testri
+from cohlib.alg.em_gaussian_obs import construct_Gamma_full_real
 
 def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
 
@@ -26,6 +26,13 @@ def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
     if cfg.latent.gamma == 'k2-single-10':
         gamma_path = os.path.join(gamma_root(), f"{lcfg.gamma}.pickle")
         gamma_load = pickle_open(gamma_path)
+    elif lcfg.gamma == 'k2-flat':
+        flow = lcfg.freq_low
+        fhigh = lcfg.freq_high
+        scale_power = lcfg.scale_power
+        k2_flat(flow, fhigh, scale_power)
+        gamma_path = os.path.join(gamma_root(), f"k2-flat{flow}-{fhigh}-{scale_power}.pickle")
+        gamma_load = pickle_open(gamma_path)
     elif lcfg.gamma == 'k2-full-10':
         flow = lcfg.freq_low
         fhigh = lcfg.freq_high
@@ -33,6 +40,14 @@ def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
         sp_offtarget = lcfg.scale_power_offtarget
         k2_full(flow, fhigh, sp_target, sp_offtarget)
         gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}.pickle")
+        gamma_load = pickle_open(gamma_path)
+    elif lcfg.gamma == 'k2-full-10-testri':
+        flow = lcfg.freq_low
+        fhigh = lcfg.freq_high
+        sp_target = lcfg.scale_power_target
+        sp_offtarget = lcfg.scale_power_offtarget
+        k2_full_testri(flow, fhigh, sp_target, sp_offtarget)
+        gamma_path = os.path.join(gamma_root(), f"k2-full{flow}-{fhigh}-10-{sp_target}-{sp_offtarget}_testri.pickle")
         gamma_load = pickle_open(gamma_path)
     elif lcfg.gamma == 'k2-full-multitarget1':
         flow = lcfg.freq_low
@@ -172,7 +187,6 @@ def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
 
     old_model_load = load_old()
     Wv = old_model_load['Wv']
-    obs_var = obs_params['obs_var']
 
 
     sample_length = Wv.shape[0]
@@ -188,14 +202,25 @@ def gen_data_and_fit_model_ts_scipy(cfg, inverse_correction):
         }
 
     tapers = None
-    invQ = jnp.diag(jnp.ones(sample_length)*(1/obs_var))
-    invQs = [invQ for k in range(K)]
 
-    print(f'Correction to inverse conversion error: {inverse_correction}')
     obs_oldorder = obs.swapaxes(0,-1)
     obs_grouped = [obs_oldorder[:,None,k,:] for k in range(K)]
-    gamma_est, gamma_est_tapers, track = fit_gaussian_model(obs_grouped, Wv, inits, tapers, invQs, etype='approx', num_em_iters=mcfg.emiters, 
-                max_approx_iters=0, track=True, inverse_correction=inverse_correction)
+
+    print(f'Correction to inverse conversion error: {inverse_correction}')
+
+    if obs_type == 'gaussian':
+        obs_var = obs_params['obs_var']
+        invQ = jnp.diag(jnp.ones(sample_length)*(1/obs_var))
+        invQs = [invQ for k in range(K)]
+
+        gamma_est, gamma_est_tapers, track = fit_gaussian_model(obs_grouped, Wv, inits, tapers, invQs, etype='approx', num_em_iters=mcfg.emiters, 
+                    max_approx_iters=0, track=True, inverse_correction=inverse_correction)
+    elif obs_type == 'pp_relu':
+        inits['params'] = {k: obs_params for k in range(K)}
+        inits['obs_model'] = 'poisson-relu-delta'
+        inits['optim_type'] = 'Newton'
+        gamma_est, gamma_est_tapers, track = fit_pp_model(obs_grouped, Wv, inits, tapers, num_em_iters=mcfg.emiters, 
+                    max_approx_iters=0, track=True, inverse_correction=inverse_correction)
 
     method = 'scipy'
     if inverse_correction is True:

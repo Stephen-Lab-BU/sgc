@@ -3,7 +3,7 @@ import numpy as np
 from numpy.random import multivariate_normal as mvn
 import warnings
 
-from cohlib.alg.em_sgc import transform_cov_c2r
+from cohlib.utils import transform_cov_c2r
 
 
 def sample_spikes_from_xs(lams, C, delta=1, group_axis=1, obs_model='bernoulli'):

@@ -1,5 +1,5 @@
 defaults: 
-  - latent: full10
+  - latent: full10_testri
   - obs: gaussian_obs
   - model: full_support
 
@@ -9,5 +9,4 @@ latent:
 model:
   inverse_correction: true
   init: 'true-init'
-  scale_init: 1
   true_to_flat: 'target'

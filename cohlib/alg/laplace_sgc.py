@@ -1,3 +1,4 @@
+import jax.numpy as jnp
 import scipy.optimize as op
 from scipy.linalg import block_diag
 import numpy as np
@@ -5,7 +6,7 @@ from abc import ABC, abstractmethod
 mvn = np.random.multivariate_normal
 
 class TrialData():
-    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model, optim_type, Gamma_prev_logdet=None):
+    def __init__(self, trial_objs, Gamma_inv_prev, W, params, obs_model, optim_type):
         self.trial_objs = trial_objs
         self.W = W
         self.num_J_vars = W.shape[1]
@@ -14,7 +15,6 @@ class TrialData():
         self.params = params
         self.obs_model = obs_model
         self.optim_type = optim_type
-        self.Gamma_prev_logdet = Gamma_prev_logdet
 
         if self.obs_model == 'poisson-log-delta':
             self.compute_fisher_info = self.computer_fisher_info_delta_log_poisson

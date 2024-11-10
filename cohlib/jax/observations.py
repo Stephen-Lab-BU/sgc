@@ -124,7 +124,7 @@ def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type, zs_flatte
 
     return cost_func
 
-def e_step_par(data, gamma_prev_inv, params, obs_type, max_iter=5, Ups_diag=False, return_mus=False):
+def e_step_par(data, gamma_prev_inv, params, obs_type, max_iter=5, Ups_diag=False, return_mus=False, conj_hess=False):
     
     K = data.shape[1]
     num_devices = len(jax.devices())
@@ -147,11 +147,14 @@ def e_step_par(data, gamma_prev_inv, params, obs_type, max_iter=5, Ups_diag=Fals
         for _ in range(max_iter):
             zs_hess = cost_hess(zs_est)
             hess_sel = jnp.stack([zs_hess[n,:,n,:] for n in range(Nnz)])
+            if conj_hess:
+                hess_sel = hess_sel.conj()
             hess_sel_inv = jnp.linalg.inv(hess_sel)
 
             zs_grad = cost_grad(zs_est).conj()
             zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_sel_inv, zs_grad)
-            _cost = cost_func(zs_est)
+
+            # _cost = cost_func(zs_est)
             # jax.debug.breakpoint()
 
         zs_est = zs_est.reshape((Nnz,K))
