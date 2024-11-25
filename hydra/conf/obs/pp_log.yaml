@@ -1,0 +1,5 @@
+obs_type: 'pp_log'
+alpha: 1
+delta: 0.001
+seed: 7
+threshold_obs: false

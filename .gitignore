@@ -28,4 +28,12 @@ hydra/debug_gaussian_obs/archive
 hydra/archive
 hydra/batch_submit
 hydra/gammas
+hydra/refac_pprelu_obs/outputs
+hydra/refac_pprelu_obs/batch
+hydra/gaussian_obs_postfix/batch
+hydra/gaussian_obs_postfix/outputs
+hydra/pp_log_obs/batch
+hydra/pp_log_obs/outputs
+old
+hydra_old
 __pycache__

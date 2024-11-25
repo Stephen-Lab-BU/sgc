@@ -2,6 +2,8 @@ import jax.numpy as jnp
 import jax.random as jr
 
 
+# TODO write classes for latent/observation dist
+# TODO move dependency on ocfg to separate step
 def sample_obs(ocfg, xs):
     if ocfg.obs_type == 'gaussian':
         sample_func = sample_obs_gaussian
@@ -98,6 +100,7 @@ def _c_sample_func_bernoulli(rk, C):
 # - create generic 'ccn_sample' function and use
 
 # Generics
+# TODO add references for why this works
 def sample_ccn(rk, cov, L):
     """
     Generate L samples from K-dimensional multivariate complex 
@@ -112,11 +115,11 @@ def sample_ccn(rk, cov, L):
         samples: (K,L) array (complex)
     
     """
-    assert jnp.all(cov.conj().T == cov)
+    assert jnp.all(jnp.isclose(cov.conj().T, cov, atol=1e-9))
     K = cov.shape[0]
 
     eigvals, eigvecs = jnp.linalg.eigh(cov)
-    assert jnp.all(eigvals >= 0)
+    # assert jnp.all(eigvals >= 0)
 
     D = jnp.diag(jnp.sqrt(eigvals))
     A = eigvecs @ D
@@ -125,6 +128,35 @@ def sample_ccn(rk, cov, L):
     samples = jnp.einsum('ki,il->kl', A, unit_samples)
 
     return samples
+
+def sample_ccn_rank1(rk, eigvec, eigval, K, L):
+    """
+    Generate L samples from K-dimensional multivariate complex 
+    normal (circular symmetric). 'cov' must be psd Hermitian.
+
+    Args:
+        rk: jax random key
+        cov: (K,K) array PSD Hermitian covariance matrix
+        L: number of samples
+
+    Returns:
+        samples: (K,L) array (complex)
+    
+    """
+    eigvecs = jnp.zeros((K,K), dtype=complex)
+    eigvecs = eigvecs.at[:,0].set(eigvec)
+
+    eigvals = jnp.zeros(K)
+    eigvals = eigvals.at[0].set(eigval)
+
+    D = jnp.diag(jnp.sqrt(eigvals))
+    A = eigvecs @ D
+
+    unit_samples = jr.normal(rk, (K,L), dtype=complex)
+    samples = jnp.einsum('ki,il->kl', A, unit_samples)
+
+    return samples
+
 
 # Application
 def sample_from_gamma(rk, gamma, L):

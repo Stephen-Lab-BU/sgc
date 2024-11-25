@@ -1,0 +1,19 @@
+defaults: 
+  - latent: k3_temp
+  - obs: pp_relu
+  - model: full_support
+
+latent:
+  gamma: 'k3-temp-rank1'
+  scale: 1
+  scale_off_diag: 1
+  L: 10
+
+model:
+  init: 'flat-init'
+  scale_init: 10000000
+  support: [9,9]
+  emiters: 20
+
+obs:
+  alpha: 100
