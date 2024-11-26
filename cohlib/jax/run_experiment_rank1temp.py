@@ -56,10 +56,16 @@ def gen_data_and_fit_model_rank1(cfg):
     # instantiate model and run em
     print(f"Running EM for {mcfg.emiters} iters. Newton iters = {mcfg.maxiter}")
 
+    # TODO: handle m_step options in better way
+    if mcfg.m_step_option == 'standard':
+        m_step_params = None
+    elif mcfg.m_step_option == 'low-rank':
+        m_step_params = {'rank': mcfg.m_step_rank}
+
     model = ToyModel()
     model.initialize_latent(gamma_init, freqs, nz_model)
     model.initialize_observations(obs_params, obs_type)
-    model.fit_em(obs, mcfg.emiters, mcfg.maxiter)
+    model.fit_em(obs, mcfg.emiters, mcfg.maxiter, m_step_option=mcfg.m_step_option, m_step_params=m_step_params)
 
     gamma_est = model.gamma
 

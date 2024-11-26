@@ -69,6 +69,7 @@ def load_gamma(cfg):
 
 
 
+pp_obs = ['pp_relu', 'pp_log']
 
 def construct_gamma_init(cfg, obs, gamma_load):
     gamma_full = gamma_load['gamma']
@@ -139,16 +140,18 @@ def construct_gamma_init(cfg, obs, gamma_load):
             gamma_inv_init = gamma_inv_init.at[nz_target,:,:].set(gamma_inv_init_target)
         elif mcfg.init == 'empirical-init':
             print('Using empirical (naive) estimate for initialization.')
-            if obs_type == 'pp_relu':
+            if obs_type in pp_obs:
                 gamma_empirical = naive_estimator(obs, nz) * 1e6
-                gamma_empirical_inv = jnp.linalg.inv(gamma_empirical)
-                # gamma_inv_init = gamma_inv_init.at[nz_model[:-1],:,:].set(gamma_empirical_inv)
-                gamma_inv_init = gamma_inv_init.at[nz_model,:,:].set(gamma_empirical_inv)
+            elif obs_type == 'gaussian':
+                gamma_empirical = naive_estimator(obs, nz) 
             else:
                 raise NotImplementedError
+            gamma_empirical_inv = jnp.linalg.inv(gamma_empirical)
+            # gamma_inv_init = gamma_inv_init.at[nz_model[:-1],:,:].set(gamma_empirical_inv)
+            gamma_inv_init = gamma_inv_init.at[nz_model,:,:].set(gamma_empirical_inv)
         elif mcfg.init == 'empirical-diag-init':
             print('Using empirical (naive) estimate for initialization.')
-            if obs_type != 'gaussian':
+            if obs_type in pp_obs:
                 gamma_empirical = naive_estimator(obs, nz) * 1e6
                 print('Setting off-diagonal init terms to zero.')
                 gamma_empirical = gamma_empirical * jnp.eye(K)[None,:,:]
@@ -158,7 +161,7 @@ def construct_gamma_init(cfg, obs, gamma_load):
                 raise NotImplementedError
         elif mcfg.init == 'empirical-flat':
             print('Using empirical (naive) estimate for initialization.')
-            if obs_type != 'gaussian':
+            if obs_type in pp_obs:
                 gamma_empirical = naive_estimator(obs, nz) * 1e6
                 print('Setting off-diagonal init terms to zero.')
                 gamma_empirical = gamma_empirical * jnp.eye(K)[None,:,:]

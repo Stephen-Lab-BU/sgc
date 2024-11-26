@@ -5,4 +5,5 @@ emiters: 10
 scale_init: 1
 support: null
 track_mus: true
-m_step_mod: 'none'
+m_step_option: 'standard'
+m_step_rank: null
