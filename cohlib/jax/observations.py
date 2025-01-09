@@ -97,6 +97,7 @@ def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params):
      
 
 
+# TODO move this to models.py and specify that this is for *FULL RANK*
 def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type):
     if trial_data.ndim == 2:
         K = trial_data.shape[1]

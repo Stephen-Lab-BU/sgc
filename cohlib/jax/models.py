@@ -7,14 +7,39 @@ import jax.numpy as jnp
 
 from cohlib.jax.observations import get_e_step_cost_func
 
+# OK - stop for now and do concrete part, 
+# update tomorrow after looking at dynamax for some ideas on how to structure well
+class ObservationDist(ABC):
+    def __init__(self, dist_type, params):
+        self.dist_type = dist_type
+        self.params = params
+
+    @abstractmethod
+    def log_ll(self, data):
+        pass
+
+    @abstractmethod
+    def update_params(self, params):
+        pass
+
+class LatentDist(ABC):
+    @abstractmethod
+    def init(self, params):
+        pass
+
+    @abstractmethod
+    def log_ll(self):
+        pass
+
 class LatentFourierModel(ABC):
     """
     Abstract class to define structure all models in package follow.
     """
 
     @abstractmethod
-    def initialize_latent(self):
-        pass
+    def initialize_latent(self, dist_type: str, params: dict) -> None:
+        self.latent_type = dist_type
+        # self.latent = create_latent(dist_type, params)
 
     @abstractmethod
     def initialize_observations(self):
@@ -23,6 +48,8 @@ class LatentFourierModel(ABC):
     @abstractmethod
     def fit_em(self):
         pass
+
+
 
     
 class ToyModel(LatentFourierModel):
@@ -119,8 +146,11 @@ class JaxOptim():
         num_batches = jnp.ceil(L/num_devices).astype(int)
         mus_res = []
         Ups_res = []
+        # print(f'Num Devices: {num_devices}')
+        # print(f'L: {L}, num_batches: {num_batches}')
         for b in range(num_batches):
             batch_data = data[:,:,b*num_devices:b*num_devices+num_devices]
+            print(f'Running batch {b}: trials {b*num_devices + 1 } - {b*num_devices+batch_data.shape[2] }')
             func = partial(self.trial_optimizer,
                 batch=batch_data,
                 gpi=self.gamma_inv,
@@ -138,12 +168,59 @@ class JaxOptim():
                 mus_res.append(batch_res[0])
                 Ups_res.append(batch_res[1])
 
+        # print(f'length output = {len(mus_res)}')
+        # mus_temp = jnp.concatenate(mus_res, axis=0)
+        # print(f'mus cat shape: {mus_temp.shape}')
         mus = jnp.moveaxis(jnp.concatenate(mus_res, axis=0), 0, -1)
+        # print(f'mus dim reordered shape: {mus.shape}')
 
+        # print(f'length output = {len(Ups_res)}')
+        # Upss_temp = jnp.concatenate(Ups_res, axis=0) 
+        # print(f'Upss cat shape: {Upss_temp.shape}')
         Upss = jnp.moveaxis(jnp.concatenate(Ups_res, axis=0), 0, -1)
+        # print(f'Upss dim reordered shape: {Upss.shape}')
 
 
         return mus, Upss
+
+    def run_e_step_par_ts(self, data, num_devices):
+        Nnz = self.Nnz
+        
+        K = data.shape[1]
+        L = data.shape[2]
+
+        num_batches = jnp.ceil(L/num_devices).astype(int)
+        print(f'num_batches = {num_batches}')
+        mus_res = []
+        Ups_res = []
+        for b in range(num_batches):
+            batch_data = data[:,:,b*num_devices:b*num_devices+num_devices]
+            print(f'batch shape: {batch_data.shape}')
+            func = partial(self.trial_optimizer,
+                batch=batch_data,
+                gpi=self.gamma_inv,
+                p=self.params,
+                obs_type=self.obs_type)
+            if b == num_batches - 1:
+                num_run_trials = b*num_devices
+                remaining = L - num_run_trials
+                batch_res = jax.pmap(func)(jnp.arange(remaining))
+                mus_res.append(batch_res[0])
+                Ups_res.append(batch_res[1])
+            else:
+                batch_res = jnp.arange(num_devices)
+                batch_res = jax.pmap(func)(jnp.arange(num_devices))
+                mus_res.append(batch_res[0])
+                Ups_res.append(batch_res[1])
+
+        return mus_res, Ups_res
+
+        # mus = jnp.moveaxis(jnp.concatenate(mus_res, axis=0), 0, -1)
+
+        # Upss = jnp.moveaxis(jnp.concatenate(Ups_res, axis=0), 0, -1)
+
+
+        # return mus, Upss
 
     def trial_optimizer(self, trial, batch, gpi, p, obs_type):
         """
@@ -211,14 +288,15 @@ def m_step(mus_outer, Upss, options=None):
 def m_step_lowrank(mus_outer, Upss, options):
     rank = options['rank']
     gamma_est_standard = (mus_outer + Upss).mean(-1)
+    # print(f'gamma_est_standard shape: {gamma_est_standard.shape}')
     J = gamma_est_standard.shape[0]
 
     gamma_est_lowrank = jnp.zeros_like(gamma_est_standard)
     for j in range(J):
-        evals, evecs = jnp.linalg.eigh(gamma_est_standard)
-        
+        evals, evecs = jnp.linalg.eigh(gamma_est_standard[j,:,:])
+
         evals_lowrank = evals[::-1].at[rank:].set(0)[::-1]
-        gamma_est_lowrank = evecs @ jnp.diag(evals_lowrank) @ evecs.conj().T
+        gamma_est_lowrank = gamma_est_lowrank.at[j,:,:].set(evecs @ jnp.diag(evals_lowrank) @ evecs.conj().T)
 
     return gamma_est_lowrank
 

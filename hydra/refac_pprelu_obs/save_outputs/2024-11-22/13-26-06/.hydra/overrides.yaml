@@ -1,0 +1,7 @@
+- latent.gamma=k10-chlg3-rank1-nz9
+- latent.L=25
+- model.maxiter=25
+- model.support=[9,9]
+- model.emiters=50
+- model.init=empirical-init
+- obs.alpha=10

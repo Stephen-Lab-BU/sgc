@@ -25,8 +25,8 @@ def gen_data_and_fit_model_rank1(cfg):
     freqs = gamma_load['freqs']
     nz_true = gamma_load['nonzero_inds']
     nz_target = gamma_load['target_inds']
-    eigvec = gamma_load['eigvec']
-    eigval = gamma_load['eigval']
+    eigvecs = gamma_load['eigvecs']
+    eigvals = gamma_load['eigvals']
 
 
     # sample latent and observations according to gamma and observation distribution
@@ -36,16 +36,18 @@ def gen_data_and_fit_model_rank1(cfg):
     if ocfg.obs_type == 'gaussian':
         print(f'obs var = {ocfg.ov1}e{ocfg.ov2}')
     lrk = jr.key(lcfg.seed)
-
-    zs_target = sample_ccn_rank1(lrk, eigvec, eigval, K, lcfg.L)
     gamma_full_dummytarget = gamma_full.copy()
     gamma_full_dummytarget = gamma_full_dummytarget.at[nz_target,:,:].set(jnp.eye(K, dtype=complex))
 
     zs = sample_from_gamma(lrk, gamma_full_dummytarget, lcfg.L)
-    zs = zs.at[nz_target,:,:].set(zs_target)
+
+    for j, ind in enumerate(nz_target):
+        zs_target = sample_ccn_rank1(lrk, eigvecs[j,:].squeeze(), eigvals[j].squeeze(), K, lcfg.L)
+        zs = zs.at[nz_target,:,:].set(zs_target)
 
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
+
 
     obs, obs_params = sample_obs(ocfg, xs)
     obs_type = ocfg.obs_type
