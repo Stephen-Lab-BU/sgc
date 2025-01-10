@@ -19,13 +19,16 @@ def gen_data_and_fit_model_rankRm(cfg):
     num_devices = len(jax.devices())
     print(f"NUM_DEVICES={num_devices}")
 
-    # TODO simplifiy design (read below)
+    # TODO simplifiy design 
+    ########
     # let's just have gamma constructed on the fly instead of storing it... that way we don't have to keep track of all the names etc
-    # gamma will always be saved with the experiment, and will be deterministic based on relevant parameters
-    # ah - maybe that's the issue... 
-    # instead, let's make use of the low-rank CCN class we made and just require in our experiment script that gamma and metadata are all valid
-    # so instead of load_gamma we can just have an abstract procedure that produces a gamma, and then we can drop in any method to do so
-    # importantly, we want to be able to declare how this happens using hydra cfg with minimal conceptual overhead
+    # gamma has been an array - always saved with the experiment, and should be deterministic based on relevant parameters
+    # instead, let's make use of the low-rank CCN class we made and just require when running experiment script that gamma (attribute of LRCCN) and metadata (attributes?) are all valid
+    # i.e. instead of load_gamma we will just have an abstract procedure that specifies a distribution object
+    # we can then drop in any procedure to create distribution object
+
+    # ** importantly, we want to be able to declare how this happens using hydra cfg with minimal conceptual overhead
+    ########
 
 
     gamma_load = load_gamma(cfg)
