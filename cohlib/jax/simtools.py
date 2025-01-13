@@ -7,6 +7,7 @@ from cohlib.jax.dists import naive_estimator
 from cohlib.jax.lr_model import LowRankGamma, rotate_eigvecs
 from cohlib.jax.plot import get_eigvec, get_eigval
 
+# TODO deprecate all 
 def load_gamma(cfg):
     lcfg = cfg.latent
     if cfg.latent.gamma == 'k2-single-10':
