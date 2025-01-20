@@ -4,7 +4,7 @@ import jax.numpy as jnp
 from cohlib.utils import gamma_root, pickle_open
 from cohlib.jax.gamma_create import k2_full, k2_full_multitarget1, k2_flat, k2_full_testri
 from cohlib.jax.dists import naive_estimator
-from cohlib.jax.lr_model import LowRankGamma, rotate_eigvecs
+from cohlib.jax.lr_model import LowRankCCN, rotate_eigvecs
 from cohlib.jax.plot import get_eigvec, get_eigval
 
 # TODO deprecate all 
@@ -263,5 +263,5 @@ def construct_gamma_init_rankR(cfg, gamma_load, zs, obs, rank):
     else:
         raise ValueError
 
-    gamma_init = LowRankGamma(eigvals_init, eigvecs_init, K, freqs, nz)
+    gamma_init = LowRankCCN(eigvals_init, eigvecs_init, K, freqs, nz)
     return gamma_init, nz_model

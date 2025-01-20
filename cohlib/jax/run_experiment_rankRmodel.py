@@ -3,8 +3,8 @@ import jax.numpy as jnp
 import jax.random as jr
 
 from cohlib.jax.dists import sample_from_gamma, sample_obs, sample_ccn_rank1
-from cohlib.jax.observations import add0
 from cohlib.jax.simtools import load_gamma, construct_gamma_init_rankR
+from cohlib.jax.utils import add0
 
 from cohlib.jax.lr_model import LowRankToyModel, rotate_eigvecs
 
