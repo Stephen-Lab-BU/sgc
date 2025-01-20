@@ -203,7 +203,7 @@ def get_naive_and_oracle(res_load, Ls, mus, K, Nnz):
 
 
 
-            obs, obs_params = sample_obs(ocfg, xs)
+            obs, obs_params = sample_obs(xs, params)
             naive_est = naive_estimator(obs, nz_model)
             naive_ests = naive_ests.at[l,a,:,:,:].set(naive_est)
 

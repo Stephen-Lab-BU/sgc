@@ -1,23 +1,25 @@
 import jax.numpy as jnp
 import jax.random as jr
 
+# TODO move LR CCN dist object to this file
+# TODO move sampling functionality of CCN to dist object method
 
-# TODO write classes for latent/observation dist
-# TODO move dependency on ocfg to separate step
-def sample_obs(ocfg, xs):
-    if ocfg.obs_type == 'gaussian':
+# TODO write classes for observation dist and move functionality here to methods
+
+def sample_obs(xs, params):
+    if params['obs_type'] == 'gaussian':
         sample_func = sample_obs_gaussian
-    elif ocfg.obs_type == 'pp_relu':
+    elif params['obs_type'] == 'pp_relu':
         sample_func = sample_obs_pp_relu
-    elif ocfg.obs_type == 'pp_log':
+    elif params['obs_type'] == 'pp_log':
         sample_func = sample_obs_pp_log
     else: 
         raise NotImplementedError
 
-    obs, params = sample_func(ocfg, xs)
+    obs, params = sample_func(xs, params)
     return obs, params
 
-def sample_obs_pp_poisson(link, ocfg, xs):
+def sample_obs_pp_poisson(xs, params, link):
     if link == 'relu':
         cif = cif_alpha_relu
     elif link == 'log':
@@ -25,9 +27,13 @@ def sample_obs_pp_poisson(link, ocfg, xs):
     else: 
         raise NotImplementedError
 
-    ork = jr.key(ocfg.seed)
-    alpha = ocfg.alpha
-    delta = ocfg.delta
+    seed = params['seed']
+    alpha = params['alpha']
+    delta = params['delta']
+
+    ork = jr.key(seed)
+    alpha = alpha
+    delta = delta
     C = 1
     K = xs.shape[1]
     if jnp.ndim(alpha) == 0:
@@ -42,13 +48,13 @@ def sample_obs_pp_poisson(link, ocfg, xs):
     obs = samples.squeeze()
     params = {'alpha': alpha, 'delta': delta}
 
-    return obs, params
+    return obs
 
-def sample_obs_pp_relu(ocfg, xs): # rk, xs, alpha, C=1, delta=1e-3):
-    return sample_obs_pp_poisson('relu', ocfg, xs)
+def sample_obs_pp_relu(xs, params): # rk, xs, alpha, C=1, delta=1e-3):
+    return sample_obs_pp_poisson(xs, params, 'relu')
 
-def sample_obs_pp_log(ocfg, xs): # rk, xs, alpha, C=1, delta=1e-3):
-    return sample_obs_pp_poisson('log', ocfg, xs)
+def sample_obs_pp_log(xs, params): # rk, xs, alpha, C=1, delta=1e-3):
+    return sample_obs_pp_poisson(xs, params, 'log')
 
 def cif_alpha_log(alphas, xs):
     return jnp.exp(alphas[None,:,None] + xs)
@@ -59,14 +65,18 @@ def cif_alpha_relu(alphas, xs):
     return lams
 
 
-def sample_obs_gaussian(ocfg, xs):
-    print(f"Sampling Gaussian observations with variance {ocfg.ov1}e^{ocfg.ov2}")
-    ork = jr.key(ocfg.seed)
-    obs_var = ocfg.ov1 * 10**ocfg.ov2
+# TODO clean up params usage 
+def sample_obs_gaussian(xs, params):
+    ov1 = params['ov1']
+    ov2 = params['ov2']
+    seed = params['seed']
+    print(f"Sampling Gaussian observations with variance {ov1}e^{ov2}")
+    ork = jr.key(seed)
+    obs_var = ov1 * 10**ov2
     params = {'obs_var': obs_var}
     obs = xs + jr.normal(ork, xs.shape)*jnp.sqrt(obs_var)
 
-    return obs, params
+    return obs
 
 
 def sample_spikes_from_lams(rk, lams, C, delta=1, group_axis=1, obs_model='bernoulli'):

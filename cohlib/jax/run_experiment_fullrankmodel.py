@@ -32,7 +32,7 @@ def gen_data_and_fit_model(cfg):
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
 
-    obs, obs_params = sample_obs(ocfg, xs)
+    obs, obs_params = sample_obs(xs, params)
     obs_type = ocfg.obs_type
 
     # initialize gamma
