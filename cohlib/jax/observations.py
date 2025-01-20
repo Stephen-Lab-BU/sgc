@@ -5,12 +5,7 @@ import jax
 from functools import partial
 import jax.numpy as jnp
 
-def add_dc(x, dc):
-    dc_arr = jnp.array([dc])
-    with_dc = jnp.concatenate([dc_arr, x])
-    return with_dc
-add0 = partial(add_dc, dc=0)
-
+from cohlib.jax.utils import add0
 
 def _obs_cost_gaussian(z, data, K, N, nonzero_inds, params):
     obs_var = params['obs_var']
