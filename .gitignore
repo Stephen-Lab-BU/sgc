@@ -7,6 +7,7 @@ hydra/refac_pprelu_obs/batch
 hydra/gaussian_obs_postfix/batch
 hydra/gaussian_obs_postfix/figs
 hydra/gaussian_obs_postfix/outputs
+hydra/gaussian_obs_postfix/scripts/outputs
 hydra/pp_log_obs/batch
 hydra/pp_log_obs/outputs
 __pycache__

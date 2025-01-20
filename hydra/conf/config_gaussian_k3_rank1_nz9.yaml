@@ -2,6 +2,7 @@ defaults:
   - latent: k3_temp
   - obs: gaussian
   - model: full_support
+  - _self_
 
 latent:
   gamma: 'k3-chlg3-gaussian-rank1-nz9'

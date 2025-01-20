@@ -23,6 +23,10 @@ def gen_data_and_fit_model_rankRm(cfg):
     ########
     # let's just have gamma constructed on the fly instead of storing it... that way we don't have to keep track of all the names etc
     # gamma has been an array - always saved with the experiment, and should be deterministic based on relevant parameters
+
+    # alternatively - store gamma AND simulated data, what are pros/cons? 
+
+
     # instead, let's make use of the low-rank CCN class we made and just require when running experiment script that gamma (attribute of LRCCN) and metadata (attributes?) are all valid
     # i.e. instead of load_gamma we will just have an abstract procedure that specifies a distribution object
     # we can then drop in any procedure to create distribution object
@@ -97,7 +101,7 @@ def gen_data_and_fit_model_rankRm(cfg):
     m_step_seed = mcfg.m_step_seed
     m_step_init = mcfg.m_step_init
 
-    # TODO test rank > 1 behavior after above refactors and add functionality where needed
+    # TODO test rank > 1 behavior after above refactors and add functionality where neededdesign
     model_rank = 1
 
     # TODO refactor `construct` function
