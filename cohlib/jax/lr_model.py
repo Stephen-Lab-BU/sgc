@@ -8,53 +8,8 @@ import jax.numpy as jnp
 
 from cohlib.jax.observations import get_e_step_cost_func
 from cohlib.jax.models import LatentFourierModel, JaxOptim
+from cohlib.jax.dists import LowRankCCN
 
-
-class LowRankGamma():
-    def __init__(self, eigvals, eigvecs, dim, freqs, nonzero_inds):
-        self.nz = nonzero_inds
-        self.Nnz = nonzero_inds.size
-        self.rank = eigvals.shape[1]
-        self.dim = dim
-        self.eigvals = eigvals
-        self.eigvecs = eigvecs
-
-    def get_gamma(self):
-        gamma = jnp.zeros((self.Nnz, self.dim, self.dim), dtype=complex)
-        U_blank = jnp.zeros((self.dim, self.dim), dtype=complex)
-        for j in range(self.Nnz):
-            eigvals_j_lr = self.eigvals[j,:]
-            eigvals_j = jnp.zeros(self.dim)
-            L = jnp.diag(eigvals_j.at[:self.rank].set(eigvals_j_lr))
-
-            eigvecs_j_lr = self.eigvecs[j,:,:]
-
-            U = U_blank.copy()
-            U = U.at[:,:self.rank].set(eigvecs_j_lr)
-
-            gamma = gamma.at[j,:,:].set(U @ L @ U.conj().T)
-
-        return gamma
-
-    def get_gamma_pinv(self):
-        gamma_pinv = jnp.zeros((self.Nnz, self.dim, self.dim), dtype=complex)
-        U_blank = jnp.zeros((self.dim, self.dim), dtype=complex)
-        for j in range(self.Nnz):
-            eigvals_j_lr = 1 / self.eigvals[j,:]
-
-            # If hard setting an eigval to 0
-            eigvals_j_lr = jnp.nan_to_num(eigvals_j_lr,posinf=0,neginf=0)
-            eigvals_j = jnp.zeros(self.dim, dtype=complex)
-            Lam = jnp.diag(eigvals_j.at[:self.rank].set(eigvals_j_lr))
-
-            eigvecs_j_lr = self.eigvecs[j,:,:]
-
-            U = U_blank.copy()
-            U = U.at[:,:self.rank].set(eigvecs_j_lr)
-
-            gamma_pinv = gamma_pinv.at[j,:,:].set(U @ Lam @ U.conj().T)
-
-        return gamma_pinv
 
 def rotate_eigvecs(eigvecs):
     """
@@ -164,7 +119,7 @@ class LowRankToyModel(LatentFourierModel):
             print('eigvec update:')
             print(jnp.round(eigvecs_update,2))
 
-            gamma_lowrank_update = LowRankGamma(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
+            gamma_lowrank_update = LowRankCCN(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
 
             self.track['gamma_lowrank'].append(gamma_lowrank_update)
             self.gamma_lowrank = gamma_lowrank_update
