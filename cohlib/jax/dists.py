@@ -16,8 +16,7 @@ def sample_obs(xs, params):
     else: 
         raise NotImplementedError
 
-    obs, params = sample_func(xs, params)
-    return obs, params
+    return sample_func(xs, params) 
 
 def sample_obs_pp_poisson(xs, params, link):
     if link == 'relu':
@@ -139,6 +138,25 @@ def sample_ccn(rk, cov, L):
 
     return samples
 
+def sample_lrccn(rk, eigvecs_lr, eigvals_lr, K, L):
+    R = eigvals_lr.size
+
+    eigvecs = jnp.zeros((K,K), dtype=complex)
+    eigvecs = eigvecs.at[:,:R].set(eigvecs_lr)
+
+    eigvals = jnp.zeros(K)
+    eigvals = eigvals.at[:R].set(eigvals_lr)
+
+    D = jnp.diag(jnp.sqrt(eigvals))
+    A = eigvecs @ D
+
+    unit_samples = jr.normal(rk, (K,L), dtype=complex)
+    samples = jnp.einsum('ki,il->kl', A, unit_samples)
+
+    return samples
+
+
+# TODO deprecate
 def sample_ccn_rank1(rk, eigvec, eigval, K, L):
     """
     Generate L samples from K-dimensional multivariate complex 
@@ -201,3 +219,65 @@ def naive_estimator(spikes, nonzero_inds=None):
         return naive_est
     else:
         return naive_est[nonzero_inds, :, :]
+
+
+class LowRankCCN():
+    def __init__(self, eigvals, eigvecs, dim, freqs, nonzero_inds):
+        self.freqs = freqs
+        self.N = freqs.size
+        self.nz = nonzero_inds
+        self.Nnz = nonzero_inds.size
+        self.rank = eigvals.shape[1]
+        self.dim = dim
+        self.eigvals = eigvals
+        self.eigvecs = eigvecs
+
+    def get_gamma(self):
+        gamma = jnp.zeros((self.Nnz, self.dim, self.dim), dtype=complex)
+        U_blank = jnp.zeros((self.dim, self.dim), dtype=complex)
+        for j in range(self.Nnz):
+            eigvals_j_lr = self.eigvals[j,:]
+            eigvals_j = jnp.zeros(self.dim)
+            L = jnp.diag(eigvals_j.at[:self.rank].set(eigvals_j_lr))
+
+            eigvecs_j_lr = self.eigvecs[j,:,:]
+
+            U = U_blank.copy()
+            U = U.at[:,:self.rank].set(eigvecs_j_lr)
+
+            gamma = gamma.at[j,:,:].set(U @ L @ U.conj().T)
+
+        return gamma
+
+    def get_gamma_pinv(self):
+        gamma_pinv = jnp.zeros((self.Nnz, self.dim, self.dim), dtype=complex)
+        U_blank = jnp.zeros((self.dim, self.dim), dtype=complex)
+        for j in range(self.Nnz):
+            eigvals_j_lr = 1 / self.eigvals[j,:]
+
+            # If hard setting an eigval to 0
+            eigvals_j_lr = jnp.nan_to_num(eigvals_j_lr,posinf=0,neginf=0)
+            eigvals_j = jnp.zeros(self.dim, dtype=complex)
+            Lam = jnp.diag(eigvals_j.at[:self.rank].set(eigvals_j_lr))
+
+            eigvecs_j_lr = self.eigvecs[j,:,:]
+
+            U = U_blank.copy()
+            U = U.at[:,:self.rank].set(eigvecs_j_lr)
+
+            gamma_pinv = gamma_pinv.at[j,:,:].set(U @ Lam @ U.conj().T)
+
+        return gamma_pinv
+
+    def sample_nz(self, rk, L):
+        rksplit = jr.split(rk, self.Nnz)
+        samples_nz = jnp.stack([sample_lrccn(rksplit[n], self.eigvecs[n,:,:], self.eigvals[n,:], 
+                            self.dim, L) for n in range(self.Nnz)])
+        return samples_nz
+
+    def sample(self, rk, L):
+        samples_nz = self.sample_nz(rk, L)
+        samples = jnp.zeros((self.N,self.dim,L),dtype=complex)
+        samples = samples.at[self.nz,:,:].set(samples_nz)
+        return samples
+
