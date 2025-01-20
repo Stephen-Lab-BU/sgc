@@ -1,0 +1,12 @@
+latent:
+  K: 3
+  num_freqs: 500
+  target_freq_ind: 9
+  scale_power_target: 1000.0
+  L: 50
+  seed: 7
+observation:
+  obs_type: gaussian
+  ov1: 1
+  ov2: -3
+  seed: 7
