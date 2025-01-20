@@ -113,7 +113,7 @@ hydra:
     - hydra.mode=RUN
     task: []
   job:
-    name: structured
+    name: simple_gaussian
     chdir: null
     override_dirname: ''
     id: ???
@@ -137,7 +137,7 @@ hydra:
     - path: ''
       schema: structured
       provider: schema
-    output_dir: /projectnb/stephenlab/jtauber/cohlib/simulate/outputs/2025-01-16/08-50-25
+    output_dir: /projectnb/stephenlab/jtauber/cohlib/simulate/outputs/2025-01-20/16-41-12
     choices:
       observation: gaussian
       latent: singlefreq
