@@ -1,0 +1,1944 @@
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 8; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 8; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 8; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 8; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 9; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 9; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 9; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 9; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 10; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 10; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 10; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 25 samples from gamma k10-log-chlg3-rank1-nz9; seed = 10; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 25
+EM Iter 2
+Running batch 0: trials 1 - 25
+EM Iter 3
+Running batch 0: trials 1 - 25
+EM Iter 4
+Running batch 0: trials 1 - 25
+EM Iter 5
+Running batch 0: trials 1 - 25
+EM Iter 6
+Running batch 0: trials 1 - 25
+EM Iter 7
+Running batch 0: trials 1 - 25
+EM Iter 8
+Running batch 0: trials 1 - 25
+EM Iter 9
+Running batch 0: trials 1 - 25
+EM Iter 10
+Running batch 0: trials 1 - 25
+EM Iter 11
+Running batch 0: trials 1 - 25
+EM Iter 12
+Running batch 0: trials 1 - 25
+EM Iter 13
+Running batch 0: trials 1 - 25
+EM Iter 14
+Running batch 0: trials 1 - 25
+EM Iter 15
+Running batch 0: trials 1 - 25
+EM Iter 16
+Running batch 0: trials 1 - 25
+EM Iter 17
+Running batch 0: trials 1 - 25
+EM Iter 18
+Running batch 0: trials 1 - 25
+EM Iter 19
+Running batch 0: trials 1 - 25
+EM Iter 20
+Running batch 0: trials 1 - 25
+EM Iter 21
+Running batch 0: trials 1 - 25
+EM Iter 22
+Running batch 0: trials 1 - 25
+EM Iter 23
+Running batch 0: trials 1 - 25
+EM Iter 24
+Running batch 0: trials 1 - 25
+EM Iter 25
+Running batch 0: trials 1 - 25
+EM Iter 26
+Running batch 0: trials 1 - 25
+EM Iter 27
+Running batch 0: trials 1 - 25
+EM Iter 28
+Running batch 0: trials 1 - 25
+EM Iter 29
+Running batch 0: trials 1 - 25
+EM Iter 30
+Running batch 0: trials 1 - 25
+EM Iter 31
+Running batch 0: trials 1 - 25
+EM Iter 32
+Running batch 0: trials 1 - 25
+EM Iter 33
+Running batch 0: trials 1 - 25
+EM Iter 34
+Running batch 0: trials 1 - 25
+EM Iter 35
+Running batch 0: trials 1 - 25
+EM Iter 36
+Running batch 0: trials 1 - 25
+EM Iter 37
+Running batch 0: trials 1 - 25
+EM Iter 38
+Running batch 0: trials 1 - 25
+EM Iter 39
+Running batch 0: trials 1 - 25
+EM Iter 40
+Running batch 0: trials 1 - 25
+EM Iter 41
+Running batch 0: trials 1 - 25
+EM Iter 42
+Running batch 0: trials 1 - 25
+EM Iter 43
+Running batch 0: trials 1 - 25
+EM Iter 44
+Running batch 0: trials 1 - 25
+EM Iter 45
+Running batch 0: trials 1 - 25
+EM Iter 46
+Running batch 0: trials 1 - 25
+EM Iter 47
+Running batch 0: trials 1 - 25
+EM Iter 48
+Running batch 0: trials 1 - 25
+EM Iter 49
+Running batch 0: trials 1 - 25
+EM Iter 50
+Running batch 0: trials 1 - 25
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 1.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10
+Platform:  cpu
+28
+NUM_DEVICES=28
+Sampling 10 samples from gamma k10-log-chlg3-rank1-nz9; seed = 7; scale = 1
+alpha = 2.0
+EM initialization: 'flat-init'
+Setting model support to 9 Hz - 9 Hz
+Running EM for 50 iters. Newton iters = 10
+EM Iter 1
+Running batch 0: trials 1 - 10
+EM Iter 2
+Running batch 0: trials 1 - 10
+EM Iter 3
+Running batch 0: trials 1 - 10
+EM Iter 4
+Running batch 0: trials 1 - 10
+EM Iter 5
+Running batch 0: trials 1 - 10
+EM Iter 6
+Running batch 0: trials 1 - 10
+EM Iter 7
+Running batch 0: trials 1 - 10
+EM Iter 8
+Running batch 0: trials 1 - 10
+EM Iter 9
+Running batch 0: trials 1 - 10
+EM Iter 10
+Running batch 0: trials 1 - 10
+EM Iter 11
+Running batch 0: trials 1 - 10
+EM Iter 12
+Running batch 0: trials 1 - 10
+EM Iter 13
+Running batch 0: trials 1 - 10
+EM Iter 14
+Running batch 0: trials 1 - 10
+EM Iter 15
+Running batch 0: trials 1 - 10
+EM Iter 16
+Running batch 0: trials 1 - 10
+EM Iter 17
+Running batch 0: trials 1 - 10
+EM Iter 18
+Running batch 0: trials 1 - 10
+EM Iter 19
+Running batch 0: trials 1 - 10
+EM Iter 20
+Running batch 0: trials 1 - 10
+EM Iter 21
+Running batch 0: trials 1 - 10
+EM Iter 22
+Running batch 0: trials 1 - 10
+EM Iter 23
+Running batch 0: trials 1 - 10
+EM Iter 24
+Running batch 0: trials 1 - 10
+EM Iter 25
+Running batch 0: trials 1 - 10
+EM Iter 26
+Running batch 0: trials 1 - 10
+EM Iter 27
+Running batch 0: trials 1 - 10
+EM Iter 28
+Running batch 0: trials 1 - 10
+EM Iter 29
+Running batch 0: trials 1 - 10
+EM Iter 30
+Running batch 0: trials 1 - 10
+EM Iter 31
+Running batch 0: trials 1 - 10
+EM Iter 32
+Running batch 0: trials 1 - 10
+EM Iter 33
+Running batch 0: trials 1 - 10
+EM Iter 34
+Running batch 0: trials 1 - 10
+EM Iter 35
+Running batch 0: trials 1 - 10
+EM Iter 36
+Running batch 0: trials 1 - 10
+EM Iter 37
+Running batch 0: trials 1 - 10
+EM Iter 38
+Running batch 0: trials 1 - 10
+EM Iter 39
+Running batch 0: trials 1 - 10
+EM Iter 40
+Running batch 0: trials 1 - 10
+EM Iter 41
+Running batch 0: trials 1 - 10
+EM Iter 42
+Running batch 0: trials 1 - 10
+EM Iter 43
+Running batch 0: trials 1 - 10
+EM Iter 44
+Running batch 0: trials 1 - 10
+EM Iter 45
+Running batch 0: trials 1 - 10
+EM Iter 46
+Running batch 0: trials 1 - 10
+EM Iter 47
+Running batch 0: trials 1 - 10
+EM Iter 48
+Running batch 0: trials 1 - 10
+EM Iter 49
+Running batch 0: trials 1 - 10
+EM Iter 50
+Running batch 0: trials 1 - 10

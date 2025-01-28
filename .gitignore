@@ -13,8 +13,16 @@ cohlib/alg/deprecated/*
 experiments/old
 experiments/gaussian_observations/saved
 experiments/gaussian_observations2/saved
+experiments/data
+experiments/data
 hydra/outputs
 hydra/archive
 hydra/batch_submit
 hydra/gammas
+*.log
+*.pickle
+*hydra.yaml
+*config.yaml
+*overrides.yaml
+*.png
 __pycache__
