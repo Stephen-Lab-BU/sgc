@@ -10,6 +10,7 @@ from cohlib.jax.lr_model import LowRankToyModel, rotate_eigvecs
 
 
 # TODO separate into two separate functions - gen_data and fit_model
+# NOTE - completely deprecating so moot
 def gen_data_and_fit_model_rankRm(cfg):
 
     lcfg = cfg.latent
@@ -20,6 +21,7 @@ def gen_data_and_fit_model_rankRm(cfg):
     print(f"NUM_DEVICES={num_devices}")
 
     # TODO simplifiy design 
+    # NOTE this is accomplished in new hydra approach
     ########
     # let's just have gamma constructed on the fly instead of storing it... that way we don't have to keep track of all the names etc
     # gamma has been an array - always saved with the experiment, and should be deterministic based on relevant parameters
@@ -45,6 +47,7 @@ def gen_data_and_fit_model_rankRm(cfg):
     J = nz_true.size
 
     # TODO these should just be an intrinsic part of requirement outlined above
+    # NOTE accomplished 
     # change all gamma generating functions to create CCN class instead of properties (or wrap that up somewhere that is not here)
     eigvecs_true = gamma_load['eigvecs']
     eigvals_true = gamma_load['eigvals']
@@ -53,6 +56,7 @@ def gen_data_and_fit_model_rankRm(cfg):
 
     # sample latent and observations according to gamma and observation distribution
     # TODO wrap this into a sampling method for distribution object 
+    # NOTE accomplished 
     print(f"Sampling {lcfg.L} samples from gamma {lcfg.gamma}; seed = {lcfg.seed}; scale = {lcfg.scale}")
     if ocfg.obs_type == 'pp_relu' or ocfg.obs_type == 'pp_log':
         print(f'alpha = {ocfg.alpha}')
@@ -72,7 +76,7 @@ def gen_data_and_fit_model_rankRm(cfg):
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
 
-    obs, obs_params = sample_obs(xs, params)
+    obs, obs_params = sample_obs(xs)
     obs_type = ocfg.obs_type
 
     # TODO make gamma initilization part of model object 

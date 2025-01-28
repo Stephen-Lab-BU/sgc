@@ -116,7 +116,7 @@ def gen_data_and_fit_model_rank1m(cfg):
     model.initialize_observations(obs_params, obs_type)
     model.fit_em(obs, mcfg.emiters, mcfg.maxiter, m_step_option=mcfg.m_step_option, m_step_params=m_step_params)
 
-    gamma_est = model.gamma_lowrank
+    gamma_est = model.lrccn
 
     params_save = {'obs': obs_params,
             'freqs': freqs,
