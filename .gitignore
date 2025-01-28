@@ -10,4 +10,10 @@ hydra/gaussian_obs_postfix/outputs
 hydra/gaussian_obs_postfix/scripts/outputs
 hydra/pp_log_obs/batch
 hydra/pp_log_obs/outputs
+experiments/outputs
+experiments/fit/outputs
+experiments/simulate/outputs
+experiments/plot/outputs
+experiments/data
+experiments/deprecated
 __pycache__
