@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 
 from cohlib.utils import  pickle_open
 
-
-
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
