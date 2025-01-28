@@ -57,58 +57,68 @@ def stdize_eigvecs(eigvecs):
 
     
 class LowRankToyModel(LatentFourierModel):
-    def __init__(self):
-        self.track = {'gamma_lowrank': []}
+    def __init__(self, track_params=True):
+        self.track = {'lrccn': []}
+        self.track_lrccn = track_params
 
-    def initialize_latent(self, gamma_lowrank, freqs, nonzero_inds):
-        self.gamma_lowrank = gamma_lowrank
-        self.Kr = self.gamma_lowrank.rank
-        self.K = self.gamma_lowrank.dim
-        self.J = gamma_lowrank.Nnz
+    def initialize_latent(self, lrccn):
+        self.lrccn = lrccn
+        self.Kr = self.lrccn.rank
+        self.K = self.lrccn.dim
+        self.J = lrccn.Nnz
 
-        self.freqs = freqs
-        self.nz = nonzero_inds
+        self.freqs = lrccn.freqs
+        self.nz = lrccn.nz
         self.Nnz = self.freqs.size
 
-        self.track['gamma_lowrank'].append(self.gamma_lowrank)
 
     def initialize_observations(self, obs_params, obs_type):
         self.obs_params = obs_params
         self.obs_type = obs_type
 
 
-    def fit_em(self, data, num_em_iters, num_newton_iters, m_step_option='low-rank-model',
-                m_step_params=None):
+    def fit_em(self, data, fit_params):
+        
+        num_em_iters = fit_params['num_em_iters']
+        num_newton_iters = fit_params['num_newton_iters']
+        m_step_option = fit_params['m_step_option']
+        m_step_params = fit_params.get('m_step_params', {})
+        fixed_params = fit_params['fixed_params']
+
+        m_step_params['fixed_params'] = fixed_params
+
 
         params = {'obs': self.obs_params,
                   'freqs': self.freqs,
                   'nonzero_inds': self.nz,
                   'K': self.K}
 
-        # TODO might need to combine m-step option with low rank update, but do that elsewhere
-        # if m_step_option == 'standard':
-        #     self.m_step = m_step
-        #     self.m_step_params = None
-        # if m_step_option == 'low-rank-naive':
-        #     self.m_step = m_step_lowrank_naive
-        #     self.m_step_params = m_step_params
-        self.m_step = m_step_lowrank_model
+        if m_step_option == 'low-rank-eigh':
+            self.m_step = m_step_lowrank_eigh
+        else:
+            raise NotImplementedError
         self.m_step_params = m_step_params
     
+        if self.track_lrccn is True:
+            self.track['lrccn'].append(self.lrccn)
 
         for r in range(num_em_iters):
+            self.r = r
             print(f'EM Iter {r+1}')
             gamma_inv = jnp.zeros((self.Nnz, self.K, self.K), dtype=complex)
-            gamma_inv_nz = self.gamma_lowrank.get_gamma_pinv()
+            gamma_inv_nz = self.lrccn.get_gamma_pinv()
             gamma_inv = gamma_inv.at[self.nz,:,:].set(gamma_inv_nz)
             optimizer = JaxOptim(data, gamma_inv, params, self.obs_type, num_iters=num_newton_iters)
             mus, Upss = optimizer.run_e_step_par()
+            self.mus = mus
+            self.Upss = Upss
 
             mus_outer = jnp.einsum('nkl,nil->nkil', mus, mus.conj())
 
 
-            m_step_params['gamma_lowrank_prev'] = self.gamma_lowrank
+            m_step_params['lrccn_prev'] = self.lrccn
             eigvals_update, eigvecs_update = self.m_step(mus_outer, 2*Upss, self.m_step_params)
+            # TODO review / finalize this
             # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
             # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
             # in terms of CR-Calculus (Wirtinger calculus). See "The Complex Gradient Operator and the CR Calculus" (Kreutz-Delgado, 2009)
@@ -119,16 +129,43 @@ class LowRankToyModel(LatentFourierModel):
             print('eigvec update:')
             print(jnp.round(eigvecs_update,2))
 
-            gamma_lowrank_update = LowRankCCN(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
+            lrccn_update = LowRankCCN(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
 
-            self.track['gamma_lowrank'].append(gamma_lowrank_update)
-            self.gamma_lowrank = gamma_lowrank_update
+            if self.track_lrccn is True:
+                self.track['lrccn'].append(lrccn_update)
+            self.lrccn = lrccn_update
 
+def m_step_lowrank_eigh(mus_outer, Upss, params):
+    lrccn_prev = params['lrccn_prev']
+    rank = lrccn_prev.rank
+    J = lrccn_prev.Nnz
+    fixed_params = params['fixed_params']
 
-def m_step_lowrank_eigval(mus_outer, Upss, eigvecs, gamma_lowrank_prev):
     Sigma_ests = (mus_outer + Upss)
-    eigvals_update = jnp.zeros_like(gamma_lowrank_prev.eigvals)
-    J = gamma_lowrank_prev.Nnz
+    eigvals_update = jnp.zeros_like(lrccn_prev.eigvals)
+    eigvecs_update = jnp.zeros_like(lrccn_prev.eigvecs)
+
+    for j in range(J):
+        gamma_ests_j = Sigma_ests[j,:,:,:].mean(-1)
+        eigvals_eigh_j, eigvecs_eigh_j = jnp.linalg.eigh(gamma_ests_j)
+
+        if 'eigvals' in fixed_params.keys():
+            eigvals_update = fixed_params['eigvals']
+        else:
+            eigvals_update = eigvals_update.at[j,:rank].set(eigvals_eigh_j[-rank:][::-1])
+
+        if 'eigvecs' in fixed_params.keys():
+            eigvecs_update = fixed_params['eigvecs']
+        else:
+            eigvecs_update = eigvecs_update.at[j,:,:rank].set(eigvecs_eigh_j[:,-rank:][:,::-1])
+
+        return eigvals_update, eigvecs_update
+
+
+def m_step_lowrank_eigval(mus_outer, Upss, eigvecs, lrccn_prev):
+    Sigma_ests = (mus_outer + Upss)
+    eigvals_update = jnp.zeros_like(lrccn_prev.eigvals)
+    J = lrccn_prev.Nnz
 
     for j in range(J):
         Sigma_ests_j = Sigma_ests[j,:,:,:]
@@ -143,12 +180,12 @@ def m_step_lowrank_eigval(mus_outer, Upss, eigvecs, gamma_lowrank_prev):
     
     return eigvals_update, eigvecs
 
-def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, gamma_lowrank_prev, params):
+def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, lrccn_prev, params):
     Sigma_ests = (mus_outer + Upss)
-    J = gamma_lowrank_prev.Nnz
-    K = gamma_lowrank_prev.dim
+    J = lrccn_prev.Nnz
+    K = lrccn_prev.dim
 
-    eigvecs_update = jnp.zeros_like(gamma_lowrank_prev.eigvecs)
+    eigvecs_update = jnp.zeros_like(lrccn_prev.eigvecs)
     Sigma_ests = (mus_outer + Upss)
 
     for j in range(J):
@@ -157,7 +194,7 @@ def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, gamma_lowrank_prev, params):
             u_init = jr.normal(jr.key(j+init_seed), (K,)) + jr.normal(jr.key(j+init_seed+1), (K,))*1j
             u_init = u_init / jnp.linalg.norm(u_init)
         elif params['init_type'] == 'warm_start':
-            u_init = gamma_lowrank_prev.eigvecs[j,:,0]
+            u_init = lrccn_prev.eigvecs[j,:,0]
         else: 
             raise ValueError
 
@@ -171,87 +208,64 @@ def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, gamma_lowrank_prev, params):
     
     return eigvals, eigvecs_update
 
-def m_step_lowrank_model(mus_outer, Upss, params):
-    gamma_lowrank_prev = params['gamma_lowrank_prev']
-    rank = gamma_lowrank_prev.rank
-    J = gamma_lowrank_prev.Nnz
+
+
+def m_step_lowrank_custom(mus_outer, Upss, params):
+    lrccn_prev = params['lrccn_prev']
+    rank = lrccn_prev.rank
+    J = lrccn_prev.Nnz
     ts_flag = params.get('ts_flag')
     ts_flag2 = params.get('ts_flag2')
 
     fixed_u_mods = ['fixed_u_true', 'fixed_u_oracle']
     fixed_eigval_mods = ['fixed_eigval_true', 'fixed_eigval_oracle']
 
-    if ts_flag2 == 'eigh_est':
-        Sigma_ests = (mus_outer + Upss)
-        eigvals_update = jnp.zeros_like(gamma_lowrank_prev.eigvals)
-        eigvecs_update = jnp.zeros_like(gamma_lowrank_prev.eigvecs)
-
-        for j in range(J):
-            Gamma_ests_j = Sigma_ests[j,:,:,:].mean(-1)
-            eigvals_eigh_j, eigvecs_eigh_j = jnp.linalg.eigh(Gamma_ests_j)
-            eigvals_update = eigvals_update.at[j,:rank].set(eigvals_eigh_j[-rank:][::-1])
-            eigvecs_update = eigvecs_update.at[j,:,:rank].set(eigvecs_eigh_j[:,-rank:][:,::-1])
+    if rank != 1:
+        raise NotImplementedError
 
 
+    if ts_flag in fixed_u_mods:
+        print(f'M-Step: Estimating eigval; eigvec held using {ts_flag}')
+        eigvecs = params['u']
+        return m_step_lowrank_eigval(mus_outer, Upss, eigvecs, lrccn_prev)
 
-        if ts_flag in fixed_u_mods:
-            eigvecs_fixed = params['u']
-            return eigvals_update, eigvecs_fixed
-
-        elif ts_flag in fixed_eigval_mods:
-            eigvals_fixed = params['eigvals']
-            return eigvals_fixed, eigvecs_update
-
-        else:
-            return eigvals_update, eigvecs_update
+    elif ts_flag in fixed_eigval_mods:
+        eigvals = params['eigvals']
+        print(f'M-Step: Estimating eigvec; eigval held using {ts_flag}')
+        return m_step_lowrank_eigvec(mus_outer, Upss, eigvals, lrccn_prev, params)
 
     else:
-        if rank != 1:
-            raise NotImplementedError
 
+        # Sigma_ests = (mus_outer + Upss)
 
-        if ts_flag in fixed_u_mods:
-            print(f'M-Step: Estimating eigval; eigvec held using {ts_flag}')
-            eigvecs = params['u']
-            return m_step_lowrank_eigval(mus_outer, Upss, eigvecs, gamma_lowrank_prev)
+        # # if ts_flag == 'mstep_init_prev':
+        # #     u_init 
+        # u_init = jr.normal(jr.key(init_seed), (K,)) + jr.normal(jr.key(init_seed+1), (K,))*1j
+        # u_init = u_init / jnp.linalg.norm(u_init)
+        # u_est = u_init
+        # # print(f'INIT SHAPE: {u_init.shape}')
 
-        elif ts_flag in fixed_eigval_mods:
-            eigvals = params['eigvals']
-            print(f'M-Step: Estimating eigvec; eigval held using {ts_flag}')
-            return m_step_lowrank_eigvec(mus_outer, Upss, eigvals, gamma_lowrank_prev, params)
+        # eigvals_update = jnp.zeros_like(lrccn_prev.eigvals)
+        # eigvecs_update = jnp.zeros_like(lrccn_prev.eigvecs)
 
-        else:
+        # M = 5
+        # for j in range(J):
+        #     Sigma_ests_j = Sigma_ests[j,:,:,:]
+        #     for m in range(M):
+        #         uuH = jnp.outer(u_est, u_est.conj())
 
-            # Sigma_ests = (mus_outer + Upss)
+        #         ev_est = jnp.trace(uuH @ Sigma_ests_j.mean(-1)).real
 
-            # # if ts_flag == 'mstep_init_prev':
-            # #     u_init 
-            # u_init = jr.normal(jr.key(init_seed), (K,)) + jr.normal(jr.key(init_seed+1), (K,))*1j
-            # u_init = u_init / jnp.linalg.norm(u_init)
-            # u_est = u_init
-            # # print(f'INIT SHAPE: {u_init.shape}')
-
-            # eigvals_update = jnp.zeros_like(gamma_lowrank_prev.eigvals)
-            # eigvecs_update = jnp.zeros_like(gamma_lowrank_prev.eigvecs)
-
-            # M = 5
-            # for j in range(J):
-            #     Sigma_ests_j = Sigma_ests[j,:,:,:]
-            #     for m in range(M):
-            #         uuH = jnp.outer(u_est, u_est.conj())
-
-            #         ev_est = jnp.trace(uuH @ Sigma_ests_j.mean(-1)).real
-
-            #         u_est = eigvec_optim(ev_est, Sigma_ests_j, u_est, ts=False)
-                
-            #     # print(f'NOTE: {u_est.shape}')
-            #     eigvals_update = eigvals_update.at[j,0].set(ev_est)
-            #     eigvecs_update = eigvecs_update.at[j,:,0].set(u_est)
+        #         u_est = eigvec_optim(ev_est, Sigma_ests_j, u_est, ts=False)
             
-            # return eigvals_update, eigvecs_update
-            
-            # TODO update to use m_step_lowrank_eigX functions 
-            raise NotImplementedError
+        #     # print(f'NOTE: {u_est.shape}')
+        #     eigvals_update = eigvals_update.at[j,0].set(ev_est)
+        #     eigvecs_update = eigvecs_update.at[j,:,0].set(u_est)
+        
+        # return eigvals_update, eigvecs_update
+        
+        # TODO update to use m_step_lowrank_eigX functions 
+        raise NotImplementedError
 
 
 # NOTE This is for oracle estimate - need to write out alternative *latent cost*
