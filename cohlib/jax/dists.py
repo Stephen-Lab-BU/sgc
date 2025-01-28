@@ -187,7 +187,8 @@ def sample_ccn_rank1(rk, eigvec, eigval, K, L):
 
 
 # Application
-def sample_from_gamma(rk, gamma, L):
+# deprecated
+def DEPsample_from_gamma(rk, gamma, L):
     """
     Generate L samples from multivariate complex normal (circular symmetric). 
     Gamma is assumed to be indepedent across frequencies (block-diagonal).
@@ -270,9 +271,13 @@ class LowRankCCN():
         return gamma_pinv
 
     def sample_nz(self, rk, L):
-        rksplit = jr.split(rk, self.Nnz)
-        samples_nz = jnp.stack([sample_lrccn(rksplit[n], self.eigvecs[n,:,:], self.eigvals[n,:], 
-                            self.dim, L) for n in range(self.Nnz)])
+        if self.Nnz == 1:
+            samples_nz = sample_lrccn(rk, self.eigvecs[0,:,:], self.eigvals[0,:], self.dim, L)
+            samples_nz = samples_nz[None,:,:]
+        else:
+            rksplit = jr.split(rk, self.Nnz)
+            samples_nz = jnp.stack([sample_lrccn(rksplit[n], self.eigvecs[n,:,:], self.eigvals[n,:], 
+                                self.dim, L) for n in range(self.Nnz)])
         return samples_nz
 
     def sample(self, rk, L):

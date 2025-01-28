@@ -6,6 +6,9 @@ import jax.numpy as jnp
 
 from cohlib.utils import  pickle_open
 
+# TODO - deprecate? this code was used when all runs were saved into a single
+# folder and we had to go through and load each config to check if it was the
+# one we wanted. could still be useful so not deleting yet.
 
 def check_attrs(cfg, lcfg_attrs, mcfg_attrs, ocfg_attrs):    
     lcfg_check = [cfg.latent.get(k, None) == v for k, v in lcfg_attrs.items()]
