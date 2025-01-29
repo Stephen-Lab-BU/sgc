@@ -1,12 +1,9 @@
 import os
 import pathlib
-from dataclasses import dataclass, field
-from typing import Any, List
 import glob as glob
 
 import hydra
-from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 import jax.numpy as jnp
 
 from cohlib.jax.lr_model import LowRankToyModel
@@ -30,6 +27,12 @@ def run(cfg: Config) -> None:
     lcfg = cfg.latent
     ocfg = cfg.obs
     mcfg = cfg.model
+
+    # NOTE debug
+    # TODO remove 
+    # cwd = os.getcwd()
+    # experiments_dir = os.path.split(cwd)[0]
+    # os.chdir(experiments_dir)
 
     latent_dir = conf.get_latent_dir(lcfg)
     obs_dir = conf.get_obs_dir(ocfg, latent_dir)
@@ -79,11 +82,17 @@ def run(cfg: Config) -> None:
         model = LowRankToyModel()
 
         eigvals_init, eigvecs_init = conf.create_lowrank_eigparams(mcfg.model_init, init_params)
+
+        fixed_params = conf.get_fixed_params(mcfg.eigvals_flag, mcfg.eigvecs_flag, init_params)
+        if 'eigvals' in fixed_params.keys():
+            eigvals_init = fixed_params['eigvals']
+        if 'eigvecs' in fixed_params.keys():
+            eigvecs_init = fixed_params['eigvecs']
+
         lrccn_init = LowRankCCN(eigvals_init, eigvecs_init, K, freqs, nz_model)
         model.initialize_latent(lrccn_init)
         model.initialize_observations(obs_params, obs_type)
 
-        fixed_params = conf.get_fixed_params(mcfg.eigvals_flag, mcfg.eigvecs_flag, init_params)
         fit_params = {'num_em_iters': mcfg.num_em_iters, 
                     'num_newton_iters': mcfg.num_newton_iters,
                     'm_step_option': mcfg.m_step_option,
