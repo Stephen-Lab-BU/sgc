@@ -20,46 +20,46 @@ def sample_obs(xs, params):
 
 def sample_obs_pp_poisson(xs, params, link):
     if link == 'relu':
-        cif = cif_alpha_relu
+        cif = cif_mu_relu
     elif link == 'log':
-        cif = cif_alpha_log
+        cif = cif_mu_log
     else: 
         raise NotImplementedError
 
     seed = params['seed']
-    alpha = params['alpha']
+    mu = params['mu']
     delta = params['delta']
 
     ork = jr.key(seed)
-    alpha = alpha
+    mu = mu
     delta = delta
     C = 1
     K = xs.shape[1]
-    if jnp.ndim(alpha) == 0:
-        alphas = jnp.ones(K)*alpha
+    if jnp.ndim(mu) == 0:
+        mus = jnp.ones(K)*mu
     else:
-        assert alpha.ndim == 1
-        assert alpha.size == K
-        alphas = alpha
-    lams_single = cif(alphas, xs)
+        assert mu.ndim == 1
+        assert mu.size == K
+        mus = mu
+    lams_single = cif(mus, xs)
     lams = jnp.stack([lams_single for _ in range(C)], axis=1)
     samples = jr.poisson(ork, lams*delta)
     obs = samples.squeeze()
-    params = {'alpha': alpha, 'delta': delta}
+    params = {'mu': mu, 'delta': delta}
 
     return obs
 
-def sample_obs_pp_relu(xs, params): # rk, xs, alpha, C=1, delta=1e-3):
+def sample_obs_pp_relu(xs, params): # rk, xs, mu, C=1, delta=1e-3):
     return sample_obs_pp_poisson(xs, params, 'relu')
 
-def sample_obs_pp_log(xs, params): # rk, xs, alpha, C=1, delta=1e-3):
+def sample_obs_pp_log(xs, params): # rk, xs, mu, C=1, delta=1e-3):
     return sample_obs_pp_poisson(xs, params, 'log')
 
-def cif_alpha_log(alphas, xs):
-    return jnp.exp(alphas[None,:,None] + xs)
+def cif_mu_log(mus, xs):
+    return jnp.exp(mus[None,:,None] + xs)
 
-def cif_alpha_relu(alphas, xs):
-    lams = alphas[None,:,None] + xs
+def cif_mu_relu(mus, xs):
+    lams = mus[None,:,None] + xs
     lams = lams.at[lams < 0].set(0)
     return lams
 

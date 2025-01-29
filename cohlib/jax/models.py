@@ -90,12 +90,12 @@ class ToyModel(LatentFourierModel):
             gamma_inv_nz = jnp.linalg.inv(self.gamma[self.nz,:,:])
             gamma_inv = gamma_inv.at[self.nz,:,:].set(gamma_inv_nz)
             optimizer = JaxOptim(data, gamma_inv, params, self.obs_type, num_iters=num_newton_iters)
-            mus, Upss = optimizer.run_e_step_par()
+            alphas, Upss = optimizer.run_e_step_par()
 
-            mus_outer = jnp.einsum('nkl,nil->nkil', mus, mus.conj())
+            alphas_outer = jnp.einsum('nkl,nil->nkil', alphas, alphas.conj())
 
             gamma_update = jnp.zeros_like(self.gamma)
-            gamma_update_nz = self.m_step(mus_outer, 2*Upss, m_step_params)
+            gamma_update_nz = self.m_step(alphas_outer, 2*Upss, m_step_params)
             # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
             # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
             # in terms of CR-Calculus (Wirtinger calculus). See "The Complex Gradient Operator and the CR Calculus" (Kreutz-Delgado, 2009)
@@ -144,7 +144,7 @@ class JaxOptim():
         L = data.shape[2]
 
         num_batches = jnp.ceil(L/num_devices).astype(int)
-        mus_res = []
+        alphas_res = []
         Ups_res = []
         # print(f'Num Devices: {num_devices}')
         # print(f'L: {L}, num_batches: {num_batches}')
@@ -160,19 +160,17 @@ class JaxOptim():
                 num_run_trials = b*num_devices
                 remaining = L - num_run_trials
                 batch_res = jax.pmap(func)(jnp.arange(remaining))
-                mus_res.append(batch_res[0])
+                alphas_res.append(batch_res[0])
                 Ups_res.append(batch_res[1])
             else:
                 batch_res = jnp.arange(num_devices)
                 batch_res = jax.pmap(func)(jnp.arange(num_devices))
-                mus_res.append(batch_res[0])
+                alphas_res.append(batch_res[0])
                 Ups_res.append(batch_res[1])
 
-        # print(f'length output = {len(mus_res)}')
-        # mus_temp = jnp.concatenate(mus_res, axis=0)
-        # print(f'mus cat shape: {mus_temp.shape}')
-        mus = jnp.moveaxis(jnp.concatenate(mus_res, axis=0), 0, -1)
-        # print(f'mus dim reordered shape: {mus.shape}')
+        # print(f'length output = {len(alphas_res)}')
+        # alphas_temp = jnp.concatenate(alphas_res, axis=0)
+        alphas = jnp.moveaxis(jnp.concatenate(alphas_res, axis=0), 0, -1)
 
         # print(f'length output = {len(Ups_res)}')
         # Upss_temp = jnp.concatenate(Ups_res, axis=0) 
@@ -181,7 +179,7 @@ class JaxOptim():
         # print(f'Upss dim reordered shape: {Upss.shape}')
 
 
-        return mus, Upss
+        return alphas, Upss
 
     def run_e_step_par_ts(self, data, num_devices):
         Nnz = self.Nnz
@@ -191,7 +189,7 @@ class JaxOptim():
 
         num_batches = jnp.ceil(L/num_devices).astype(int)
         print(f'num_batches = {num_batches}')
-        mus_res = []
+        alphas_res = []
         Ups_res = []
         for b in range(num_batches):
             batch_data = data[:,:,b*num_devices:b*num_devices+num_devices]
@@ -205,22 +203,15 @@ class JaxOptim():
                 num_run_trials = b*num_devices
                 remaining = L - num_run_trials
                 batch_res = jax.pmap(func)(jnp.arange(remaining))
-                mus_res.append(batch_res[0])
+                alphas_res.append(batch_res[0])
                 Ups_res.append(batch_res[1])
             else:
                 batch_res = jnp.arange(num_devices)
                 batch_res = jax.pmap(func)(jnp.arange(num_devices))
-                mus_res.append(batch_res[0])
+                alphas_res.append(batch_res[0])
                 Ups_res.append(batch_res[1])
 
-        return mus_res, Ups_res
-
-        # mus = jnp.moveaxis(jnp.concatenate(mus_res, axis=0), 0, -1)
-
-        # Upss = jnp.moveaxis(jnp.concatenate(Ups_res, axis=0), 0, -1)
-
-
-        # return mus, Upss
+        return alphas_res, Ups_res
 
     def trial_optimizer(self, trial, batch, gpi, p, obs_type):
         """
@@ -282,12 +273,12 @@ def newton_step(zs_est, zs_grad, hess_sel):
 
     return zs_est, hess_sel_inv 
 
-def m_step(mus_outer, Upss, options=None):
-    return (mus_outer + Upss).mean(-1)
+def m_step(alphas_outer, Upss, options=None):
+    return (alphas_outer + Upss).mean(-1)
 
-def m_step_lowrank(mus_outer, Upss, options):
+def m_step_lowrank(alphas_outer, Upss, options):
     rank = options['rank']
-    gamma_est_standard = (mus_outer + Upss).mean(-1)
+    gamma_est_standard = (alphas_outer + Upss).mean(-1)
     # print(f'gamma_est_standard shape: {gamma_est_standard.shape}')
     J = gamma_est_standard.shape[0]
 

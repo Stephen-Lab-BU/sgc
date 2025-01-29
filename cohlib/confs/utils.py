@@ -22,7 +22,7 @@ def get_obs_dir(ocfg, latent_dir):
     if ocfg.obs_type == 'gaussian':
         obs_subdir = f'obs-{ocfg.obs_type}/ovb{ocfg.ov1}_ove{ocfg.ov2}/oseed{ocfg.seed}'
     elif ocfg.obs_type in ['pp_relu', 'pp_log']:
-        obs_subdir = f'obs-{ocfg.obs_type}/alpha{ocfg.alpha}/oseed{ocfg.seed}'
+        obs_subdir = f'obs-{ocfg.obs_type}/mu{ocfg.mu}/oseed{ocfg.seed}'
     else:
         raise NotImplementedError
 
@@ -46,7 +46,7 @@ def get_model_dir(cfg, params):
 def get_obs_params(ocfg):
     obs_type = ocfg.obs_type
     if obs_type in ['pp_relu', 'pp_log']:
-        obs_params = {'alpha': ocfg.alpha, 'delta': ocfg.delta}
+        obs_params = {'mu': ocfg.mu, 'delta': ocfg.delta}
     elif obs_type == 'gaussian':
         obs_params = {'obs_var': ocfg.ov1 * 10**ocfg.ov2,}
     else:

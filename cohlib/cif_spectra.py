@@ -10,7 +10,7 @@ def lognormal_cov(mu, Sigma):
     return Sigma_ln
 
 
-def log_link_spectrum(alpha, Gamma):
+def log_link_spectrum(mu, Gamma):
     # convert Gamma to full real
     # construct W mat
     # calculate Sigma_x

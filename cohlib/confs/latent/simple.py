@@ -44,8 +44,8 @@ class BasicSingleFreqLog:
     # target_freq_inds: List[int] = field(default_factory=lambda: [9])
     target_freq_ind: int = 9
     scale_power_target: float = 1.0e6
-    L: int = 50
-    seed: int = 7 
+    L: int = 27
+    seed: int = 42 
 
 def create_lrccn_basic_rank1(lcfg):
     K = lcfg.K

@@ -42,8 +42,8 @@ def get_fit_config():
     register_configs()
 
     defaults = [
-        {"latent": "single_freq"},
-        {"obs": "gaussian"},
+        {"latent": "single_freq_log"},
+        {"obs": "pp_log"},
         {"model": "lr_eigh"}
     ]
 
@@ -53,6 +53,9 @@ def get_fit_config():
         latent: Any = MISSING
         obs: Any = MISSING
         model: Any = MISSING
+
+    cs = ConfigStore.instance()
+    cs.store("config", node=FitConfig)
     
     return FitConfig
 

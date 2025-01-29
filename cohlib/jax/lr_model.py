@@ -109,15 +109,15 @@ class LowRankToyModel(LatentFourierModel):
             gamma_inv_nz = self.lrccn.get_gamma_pinv()
             gamma_inv = gamma_inv.at[self.nz,:,:].set(gamma_inv_nz)
             optimizer = JaxOptim(data, gamma_inv, params, self.obs_type, num_iters=num_newton_iters)
-            mus, Upss = optimizer.run_e_step_par()
-            self.mus = mus
+            alphas, Upss = optimizer.run_e_step_par()
+            self.alphas = alphas
             self.Upss = Upss
 
-            mus_outer = jnp.einsum('nkl,nil->nkil', mus, mus.conj())
+            alphas_outer = jnp.einsum('nkl,nil->nkil', alphas, alphas.conj())
 
 
             m_step_params['lrccn_prev'] = self.lrccn
-            eigvals_update, eigvecs_update = self.m_step(mus_outer, 2*Upss, self.m_step_params)
+            eigvals_update, eigvecs_update = self.m_step(alphas_outer, 2*Upss, self.m_step_params)
             # TODO review / finalize this
             # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
             # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
@@ -135,13 +135,13 @@ class LowRankToyModel(LatentFourierModel):
                 self.track['lrccn'].append(lrccn_update)
             self.lrccn = lrccn_update
 
-def m_step_lowrank_eigh(mus_outer, Upss, params):
+def m_step_lowrank_eigh(alphas_outer, Upss, params):
     lrccn_prev = params['lrccn_prev']
     rank = lrccn_prev.rank
     J = lrccn_prev.Nnz
     fixed_params = params['fixed_params']
 
-    Sigma_ests = (mus_outer + Upss)
+    Sigma_ests = (alphas_outer + Upss)
     eigvals_update = jnp.zeros_like(lrccn_prev.eigvals)
     eigvecs_update = jnp.zeros_like(lrccn_prev.eigvecs)
 
@@ -162,8 +162,8 @@ def m_step_lowrank_eigh(mus_outer, Upss, params):
         return eigvals_update, eigvecs_update
 
 
-def m_step_lowrank_eigval(mus_outer, Upss, eigvecs, lrccn_prev):
-    Sigma_ests = (mus_outer + Upss)
+def m_step_lowrank_eigval(alphas_outer, Upss, eigvecs, lrccn_prev):
+    Sigma_ests = (alphas_outer + Upss)
     eigvals_update = jnp.zeros_like(lrccn_prev.eigvals)
     J = lrccn_prev.Nnz
 
@@ -180,13 +180,13 @@ def m_step_lowrank_eigval(mus_outer, Upss, eigvecs, lrccn_prev):
     
     return eigvals_update, eigvecs
 
-def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, lrccn_prev, params):
-    Sigma_ests = (mus_outer + Upss)
+def m_step_lowrank_eigvec(alphas_outer, Upss, eigvals, lrccn_prev, params):
+    Sigma_ests = (alphas_outer + Upss)
     J = lrccn_prev.Nnz
     K = lrccn_prev.dim
 
     eigvecs_update = jnp.zeros_like(lrccn_prev.eigvecs)
-    Sigma_ests = (mus_outer + Upss)
+    Sigma_ests = (alphas_outer + Upss)
 
     for j in range(J):
         if params['init_type'] == 'random':
@@ -210,7 +210,7 @@ def m_step_lowrank_eigvec(mus_outer, Upss, eigvals, lrccn_prev, params):
 
 
 
-def m_step_lowrank_custom(mus_outer, Upss, params):
+def m_step_lowrank_custom(alphas_outer, Upss, params):
     lrccn_prev = params['lrccn_prev']
     rank = lrccn_prev.rank
     J = lrccn_prev.Nnz
@@ -227,16 +227,16 @@ def m_step_lowrank_custom(mus_outer, Upss, params):
     if ts_flag in fixed_u_mods:
         print(f'M-Step: Estimating eigval; eigvec held using {ts_flag}')
         eigvecs = params['u']
-        return m_step_lowrank_eigval(mus_outer, Upss, eigvecs, lrccn_prev)
+        return m_step_lowrank_eigval(alphas_outer, Upss, eigvecs, lrccn_prev)
 
     elif ts_flag in fixed_eigval_mods:
         eigvals = params['eigvals']
         print(f'M-Step: Estimating eigvec; eigval held using {ts_flag}')
-        return m_step_lowrank_eigvec(mus_outer, Upss, eigvals, lrccn_prev, params)
+        return m_step_lowrank_eigvec(alphas_outer, Upss, eigvals, lrccn_prev, params)
 
     else:
 
-        # Sigma_ests = (mus_outer + Upss)
+        # Sigma_ests = (alphas_outer + Upss)
 
         # # if ts_flag == 'mstep_init_prev':
         # #     u_init 

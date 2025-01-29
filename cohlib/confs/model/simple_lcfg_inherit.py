@@ -11,4 +11,4 @@ class LowRankToySimpleM1:
     eigvecs_flag: str = 'fit'
     eigvals_flag: str = 'oracle'
     scale_init: float = 1.0
-    model_init: str = 'oracle'
+    model_init: str = 'flat'

@@ -26,13 +26,13 @@ def _obs_cost_gaussian(z, data, K, N, nonzero_inds, params):
     return obs_cost
 
 @jax.jit
-def jitted_pp_relu_calc_cost(xs, alpha, data, delta):
-    lams = xs + alpha
+def jitted_pp_relu_calc_cost(xs, mu, data, delta):
+    lams = xs + mu
 
-    # if jnp.ndim(alpha) == 0:
-    #     lams = xs + alpha
+    # if jnp.ndim(mu) == 0:
+    #     lams = xs + mu
     # else:
-    #     lams = xs + alpha[None,:,None]
+    #     lams = xs + mu[None,:,None]
 
     # cannot index with boolean like: lams = lams.at[lams < 0].set(jnp.nan); so:
     lams = jnp.where(lams < 0, jnp.nan, lams)
@@ -45,7 +45,7 @@ def jitted_pp_relu_calc_cost(xs, alpha, data, delta):
     return obs_cost
 
 def _obs_cost_pp_relu(z, data, K, N, nonzero_inds, params):
-    alpha = params['alpha']
+    mu = params['mu']
     delta = params['delta']
     zs = jnp.zeros((N,K), dtype=complex)
     zs = zs.at[nonzero_inds,:].set(z)
@@ -53,8 +53,8 @@ def _obs_cost_pp_relu(z, data, K, N, nonzero_inds, params):
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
 
-    # obs_cost = jitted_pp_relu_calc_cost(xs, alpha, data, delta)
-    lams = xs + alpha
+    # obs_cost = jitted_pp_relu_calc_cost(xs, mu, data, delta)
+    lams = xs + mu
 
     # cannot index with boolean like: lams = lams.at[lams < 0].set(jnp.nan); so:
     lams = jnp.where(lams < 0, jnp.nan, lams)
@@ -67,7 +67,7 @@ def _obs_cost_pp_relu(z, data, K, N, nonzero_inds, params):
     return obs_cost
 
 def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params):
-    alpha = params['alpha']
+    mu = params['mu']
     delta = params['delta']
     zs = jnp.zeros((N,K), dtype=complex)
     zs = zs.at[nonzero_inds,:].set(z)
@@ -75,14 +75,14 @@ def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params):
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
 
-    log_lams = xs + alpha
+    log_lams = xs + mu
     lams = jnp.exp(log_lams)
 
     obs_ll_calc = data*(jnp.log(delta) + log_lams) - lams*delta
     obs_ll = obs_ll_calc.sum()
     obs_cost = -obs_ll
 
-    # log_lams = xs + alpha + jnp.log(delta)
+    # log_lams = xs + mu + jnp.log(delta)
 
     # obs_ll_calc = (data*log_lams) - jnp.exp(log_lams)*delta
     # obs_ll = obs_ll_calc.sum()
