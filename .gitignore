@@ -16,4 +16,5 @@ experiments/simulate/outputs
 experiments/plot/outputs
 experiments/data
 experiments/deprecated
+scratch.ipynb
 __pycache__
