@@ -286,3 +286,45 @@ class LowRankCCN():
         samples = samples.at[self.nz,:,:].set(samples_nz)
         return samples
 
+class CCN():
+    def __init__(self, gamma, dim, freqs, nonzero_inds, inv_flag='standard'):
+        self.freqs = freqs
+        self.N = freqs.size
+        self.nz = nonzero_inds
+        self.Nnz = nonzero_inds.size
+        self.dim = dim
+        self.rank = dim
+        self.gamma = gamma
+        self.inv_flag = inv_flag
+
+    def get_gamma(self):
+        return self.gamma
+
+    def get_gamma_inv(self):
+        gamma_inv = jnp.zeros((self.Nnz, self.dim, self.dim), dtype=complex)
+        for j in range(self.Nnz):
+            if self.inv_flag == 'standard':
+                gamma_inv = gamma_inv.at[j,:,:].set(jnp.linalg.inv(self.gamma[j,:,:]))
+            elif self.inv_flag == 'pinv':
+                gamma_inv = gamma_inv.at[j,:,:].set(jnp.linalg.pinv(self.gamma[j,:,:]))
+            else:
+                raise ValueError
+
+        return gamma_inv
+
+    def sample_nz(self, rk, L):
+        if self.Nnz == 1:
+            samples_nz = sample_ccn(rk, self.gamma[0,:,:], L)
+            samples_nz = samples_nz[None,:,:]
+        else:
+            rksplit = jr.split(rk, self.Nnz)
+            samples_nz = jnp.stack([sample_ccn(rksplit[n], self.gamma[n,:,:], 
+                                L) for n in range(self.Nnz)])
+        return samples_nz
+
+    def sample(self, rk, L):
+        samples_nz = self.sample_nz(rk, L)
+        samples = jnp.zeros((self.N,self.dim,L),dtype=complex)
+        samples = samples.at[self.nz,:,:].set(samples_nz)
+        return samples
+

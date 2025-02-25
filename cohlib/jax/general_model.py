@@ -6,24 +6,24 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 
-from cohlib.jax.observations import get_e_step_cost_func
 from cohlib.jax.models import LatentFourierModel, JaxOptim
-from cohlib.jax.dists import LowRankCCN
+from cohlib.jax.dists import LowRankCCN, CCN
 
-    
-class LowRankToyModel(LatentFourierModel):
+class GeneralToyModel(LatentFourierModel):
+    # in place of lrccn - what do we need? 
+    # for quick version we can subsitute lrccn for ccn, of which lrccn is a sub-class with special properties
+    # m_step is easy enough 
     def __init__(self, track_params=True):
-        self.track = {'lrccn': []}
-        self.track_lrccn = track_params
+        self.track = {'ccn': []}
+        self.track_ccn = track_params
 
-    def initialize_latent(self, lrccn):
-        self.lrccn = lrccn
-        self.Kr = self.lrccn.rank
-        self.K = self.lrccn.dim
-        self.J = lrccn.Nnz
-
-        self.freqs = lrccn.freqs
-        self.nz = lrccn.nz
+    def initialize_latent(self, ccn):
+        self.ccn = ccn
+        self.Kr = self.ccn.rank
+        self.K = self.ccn.dim
+        self.J = ccn.Nnz
+        self.freqs = ccn.freqs
+        self.nz = ccn.nz
         self.Nnz = self.freqs.size
 
 
@@ -38,7 +38,7 @@ class LowRankToyModel(LatentFourierModel):
         num_newton_iters = fit_params['num_newton_iters']
         m_step_option = fit_params['m_step_option']
         m_step_params = fit_params.get('m_step_params', {})
-        fixed_params = fit_params['fixed_params']
+        fixed_params = fit_params.get('fixed_params', {})
 
         m_step_params['fixed_params'] = fixed_params
 
@@ -50,18 +50,24 @@ class LowRankToyModel(LatentFourierModel):
 
         if m_step_option == 'low-rank-eigh':
             self.m_step = m_step_lowrank_eigh
+            self.m_step_params = m_step_params
+        elif m_step_option == 'full-rank-standard':
+            self.m_step = m_step_fullrank
+            self.m_step_params = None
         else:
             raise NotImplementedError
-        self.m_step_params = m_step_params
     
-        if self.track_lrccn is True:
-            self.track['lrccn'].append(self.lrccn)
+        if self.track_ccn is True:
+            self.track['ccn'].append(self.ccn)
 
         for r in range(num_em_iters):
             self.r = r
             print(f'EM Iter {r+1}')
             gamma_inv = jnp.zeros((self.Nnz, self.K, self.K), dtype=complex)
-            gamma_inv_nz = self.lrccn.get_gamma_pinv()
+            if self.ccn.rank == self.ccn.dim:
+                gamma_inv_nz = self.ccn.get_gamma_inv()
+            else:
+                gamma_inv_nz = self.ccn.get_gamma_pinv()
             gamma_inv = gamma_inv.at[self.nz,:,:].set(gamma_inv_nz)
             optimizer = JaxOptim(data, gamma_inv, params, self.obs_type, num_iters=num_newton_iters)
             alphas, Upss = optimizer.run_e_step_par()
@@ -71,26 +77,37 @@ class LowRankToyModel(LatentFourierModel):
             alphas_outer = jnp.einsum('nkl,nil->nkil', alphas, alphas.conj())
 
 
-            m_step_params['lrccn_prev'] = self.lrccn
-            eigvals_update, eigvecs_update = self.m_step(alphas_outer, 2*Upss, self.m_step_params)
-            # TODO review / finalize this
-            # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
-            # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
-            # in terms of CR-Calculus (Wirtinger calculus). See "The Complex Gradient Operator and the CR Calculus" (Kreutz-Delgado, 2009)
-            # at https://arxiv.org/abs/0906.4835
+            if self.ccn.rank == self.ccn.dim:
+                gamma_update = self.m_step(alphas_outer, 2*Upss, self.m_step_params)
+                inv_flag = self.ccn.inv_flag
 
-            # eigvecs_update = rotate_eigvecs(eigvecs_update)
-            # eigvecs_update = stdize_eigvecs(eigvecs_update)
-            print('eigvec update:')
-            print(jnp.round(eigvecs_update,2))
-            print('eigval update:')
-            print(jnp.round(eigvals_update,2))
+                ccn_update = CCN(gamma_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz, inv_flag=inv_flag)
 
-            lrccn_update = LowRankCCN(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
+            else:
+                m_step_params['ccn_prev'] = self.ccn
+                eigvals_update, eigvecs_update = self.m_step(alphas_outer, 2*Upss, self.m_step_params)
 
-            if self.track_lrccn is True:
-                self.track['lrccn'].append(lrccn_update)
-            self.lrccn = lrccn_update
+                # TODO review / finalize this
+                # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
+                # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
+                # in terms of CR-Calculus (Wirtinger calculus). See "The Complex Gradient Operator and the CR Calculus" (Kreutz-Delgado, 2009)
+                # at https://arxiv.org/abs/0906.4835
+
+                # eigvecs_update = rotate_eigvecs(eigvecs_update)
+                # eigvecs_update = stdize_eigvecs(eigvecs_update)
+                print('eigvec update:')
+                print(jnp.round(eigvecs_update,2))
+                print('eigval update:')
+                print(jnp.round(eigvals_update,2))
+
+                ccn_update = LowRankCCN(eigvals_update, eigvecs_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz)
+
+            if self.track_ccn is True:
+                self.track['ccn'].append(ccn_update)
+            self.ccn = ccn_update
+
+def m_step_fullrank(alphas_outer, Upss, options=None):
+    return (alphas_outer + Upss).mean(-1)
 
 def m_step_lowrank_eigh(alphas_outer, Upss, params):
     lrccn_prev = params['lrccn_prev']
@@ -283,47 +300,3 @@ def eigvec_optim(ev_est, Sigma_ests, u_init, step_size=1, num_steps=1, method='G
     else:
         return u_est
 
-
-def rotate_eigvecs(eigvecs):
-    """
-    Args:
-        eigvecs: J x K x R
-    """
-
-    J = eigvecs.shape[0]
-    R = eigvecs.shape[2]
-
-    rotated = jnp.zeros_like(eigvecs)
-
-    for j in range(J):
-        thetas = jnp.angle(eigvecs[j,0,:])
-        rotations = jnp.exp(-1j*thetas)
-
-        rotated = rotated.at[j,:,:].set(eigvecs[j,:,:] * rotations[None,:])
-    
-    return rotated
-
-def stdize_eigvecs(eigvecs):
-    """
-    Args:
-        eigvecs: J x K x R
-    """
-
-    J = eigvecs.shape[0]
-    R = eigvecs.shape[2]
-
-    stdized = jnp.zeros_like(eigvecs)
-
-    for j in range(J):
-        for r in range(R):
-            if eigvecs[j,0,r].real < 0:
-                stdized = stdized.at[j,:,r].set(-eigvecs[j,:,r])
-            else:
-                stdized = stdized.at[j,:,r].set(eigvecs[j,:,r])
-    
-    return stdized
-
-
-    # for j in range(J):
-    #     for r in range(R):
-    #         if eigvecs[j,0,r].real < 0:
