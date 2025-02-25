@@ -11,26 +11,12 @@ conda activate sgc_env
 evalf='oracle'
 init='flat'
 
-# for seed in 0 1 2 3 4
-# do
-#     for L in 5 10 25 50 100 150 200
-#     do
-#         for mu in -2.0 -1.0
-#         do
-#             python simulate/simulate_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed
-#             python fit/fit_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed model.eigvals_flag=$evalf model.model_init=$init
-#         done
-#     done
-# done
-
-# for seed in 0 1 2 3 4
-for seed in 2
+for seed in 0 1 2 3 4 
 do
-    # for L in 5 10 25 50 100 150 200
-    for L in 25 
+    # for L in 10 25 50 100 #250
+    for L in 5
     do
-        # for mu in -2.0 -1.0
-        for mu in 2.0
+        for mu in -2.0 -1.0 0.0 2.0 4.0
         do
             python simulate/simulate_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed
             python fit/fit_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed model.eigvals_flag=$evalf model.model_init=$init

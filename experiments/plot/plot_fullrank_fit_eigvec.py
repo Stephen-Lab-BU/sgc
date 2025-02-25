@@ -19,18 +19,46 @@ from cohlib.utils import pickle_save, pickle_open
 import cohlib.confs.utils as conf
 from cohlib.confs.latent.simple import BasicSingleFreq, BasicSingleFreqReLU, BasicSingleFreqLog
 from cohlib.confs.obs import GaussianObs, PPReluObs, PPLogObs
-from cohlib.confs.model.simple_lcfg_inherit import LowRankToySimpleM1
+from cohlib.confs.model.simple_lcfg_inherit import FullRankToySimple
 from cohlib.jax.plot import get_eigval, get_eigvec
 
 
 jax_boilerplate()
+
+def get_eigvecs(ccn):
+    """
+    ccn.gamma shape (J x K x K)
+    """
+    gamma = ccn.gamma
+    _, eigvecs_raw = jnp.linalg.eigh(gamma)
+    eigvecs = eigvecs_raw[:,:,::-1]
+    return eigvecs
+
+def rotate_eigvecs(eigvecs):
+    """
+    Args:
+        eigvecs: J x K x R
+    """
+
+    J = eigvecs.shape[0]
+    R = eigvecs.shape[2]
+
+    rotated = jnp.zeros_like(eigvecs)
+
+    for j in range(J):
+        thetas = jnp.angle(eigvecs[j,0,:])
+        rotations = jnp.exp(-1j*thetas)
+
+        rotated = rotated.at[j,:,:].set(eigvecs[j,:,:] * rotations[None,:])
+    
+    return rotated
 
 def mod_config(cfg, L, theta):
     cfg.latent.L = L
     if cfg.obs.obs_type == 'gaussian':
         cfg.obs.ov2 = theta
     elif cfg.obs.obs_type in ['pp_relu', 'pp_log']:
-        cfg.obs.alpha = theta
+        cfg.obs.mu = theta
     else:
         raise ValueError
 
@@ -40,7 +68,7 @@ def get_theta_label(ocfg, theta):
     if ocfg.obs_type == 'gaussian':
         label = f'{ocfg.ov1}e{ocfg.ov2}'
     elif ocfg.obs_type in ['pp_relu', 'pp_log']:
-        label = f'{ocfg.alpha}'
+        label = f'{ocfg.mu}'
     else:
         return ValueError
     return label
@@ -50,15 +78,15 @@ class PlotParams:
     plot_type: str = 'eigvec_var_L'
     Ls: List[int] = field(default_factory=lambda: [50, 100])
     thetas: List[float] = field(default_factory=lambda: [25, 50])
-    # thetas: List[float] = field(default_factory=lambda: [-1.0, 0.0])
     rank_plot: int = 1
+    rotate: bool = True
     dims: List[int] = field(default_factory=lambda: [0,1,2])
 
 defaults = [
     {"plot": "lowrank"},
-    {"latent": "single-freq-relu"},
+    {"latent": "single_freq_log"},
     {"obs": "pp_relu"},
-    {"model": "lr-eigh"}
+    {"model": "fullrank"}
 ]
 
 @dataclass 
@@ -71,13 +99,13 @@ class Config:
 
 cs = ConfigStore.instance()
 cs.store(group='plot', name='lowrank', node=PlotParams)
-cs.store(group='latent', name='single-freq', node=BasicSingleFreq)
-cs.store(group='latent', name='single-freq-relu', node=BasicSingleFreqReLU)
-cs.store(group='latent', name='single-freq-log', node=BasicSingleFreqLog)
+cs.store(group='latent', name='single_freq', node=BasicSingleFreq)
+cs.store(group='latent', name='single_freq_relu', node=BasicSingleFreqReLU)
+cs.store(group='latent', name='single_freq_log', node=BasicSingleFreqLog)
 cs.store(group='obs', name='gaussian', node=GaussianObs)
 cs.store(group='obs', name='pp_relu', node=PPReluObs)
 cs.store(group='obs', name='pp_log', node=PPLogObs)
-cs.store(group='model', name='lr-eigh', node=LowRankToySimpleM1)
+cs.store(group='model', name='fullrank', node=FullRankToySimple)
 cs.store("config", node=Config)
 
 
@@ -99,7 +127,7 @@ def plot(cfg: Config):
             # context initialization
             nz_model = jnp.array([cfg.latent.target_freq_ind])
             temp_params = {'lcfg': cfg.latent, 'ocfg': cfg.obs, 
-                           'nz_model': nz_model, 'rank': cfg.model.model_rank, 'K': cfg.latent.K}
+                           'nz_model': nz_model, 'K': cfg.latent.K}
             model_dir = conf.get_model_dir(cfg, temp_params)
 
             res = pickle_open(os.path.join(model_dir, 'res.pkl'))
@@ -109,7 +137,10 @@ def plot(cfg: Config):
             lrccn_true = conf.create_lrccn_basic_rank1(cfg.latent)
             plot_data[t,l] = {}
             plot_data[t,l]['eigvec_true'] = lrccn_true.eigvecs[0,:,eigrank-1]
-            eigvecs_em = jnp.stack([x.eigvecs[0,:,eigrank-1] for x in res['track']['lrccn']])
+            if cfg.plot.rotate is True: 
+                eigvecs_em = jnp.stack([rotate_eigvecs(get_eigvecs(x))[0,:,eigrank-1] for x in res['track']['ccn']])
+            else:
+                eigvecs_em = jnp.stack([get_eigvecs(x)[0,:,eigrank-1] for x in res['track']['ccn']])
             plot_data[t,l]['eigvecs_em'] = eigvecs_em
 
             # load zs data and compute oracle est
@@ -180,7 +211,7 @@ def plot(cfg: Config):
             plt.savefig(savepath)
 
 def get_plot_dir(cfg, dim, funcname):
-    plot_dir = f'data/figs-fit/{cfg.plot.plot_type}/latent-{cfg.latent.latent_type}/window-{int(2*cfg.latent.num_freqs)}/K{cfg.latent.K}/obs-{cfg.obs.obs_type}/init-{cfg.model.model_init}/func-{funcname}/dim-{dim}'
+    plot_dir = f'data/figs-fit/{cfg.plot.plot_type}/latent-{cfg.latent.latent_type}/fullrank/window-{int(2*cfg.latent.num_freqs)}/K{cfg.latent.K}/obs-{cfg.obs.obs_type}/{cfg.model.model_init}/func-{funcname}/dim-{dim}'
     return plot_dir
 
 def plot_eigvec_var_L_subplot(ax, plot_dict, dim, func, funcname):

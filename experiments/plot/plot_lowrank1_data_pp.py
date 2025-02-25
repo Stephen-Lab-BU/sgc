@@ -17,7 +17,7 @@ from cohlib.utils import pickle_open
 import cohlib.confs.utils as conf
 from cohlib.confs.latent import BasicSingleFreqLog, BasicSingleFreqReLU
 from cohlib.confs.obs import PPLogObs, PPReluObs
-from cohlib.jax.dists import cif_alpha_log, cif_alpha_relu
+from cohlib.jax.dists import cif_mu_log, cif_mu_relu
 
 
 jax_boilerplate()
@@ -26,7 +26,7 @@ jax_boilerplate()
 class PlotParams:
     plot_type: str = 'data_plot'
     L: int = 50
-    alpha: float = 1.0
+    mu: float = 1.0
 
 defaults = [
     {"plot": "dataplot"},
@@ -54,12 +54,12 @@ cs.store("config", node=Config)
 def plot(cfg: Config):
     os.chdir('/projectnb/stephenlab/jtauber/cohlib/experiments')
     cfg.latent.L = cfg.plot.L
-    alpha = cfg.plot.alpha
-    cfg.obs.alpha = alpha
-    alphas = jnp.ones(cfg.latent.K)*alpha
+    mu = cfg.plot.mu
+    cfg.obs.mu = mu
+    mus = jnp.ones(cfg.latent.K)*mu
 
-    print(f'gathering data for alpha={alpha}')
-    cfg.obs.alpha = alpha
+    print(f'gathering data for mu={mu}')
+    cfg.obs.mu = mu
 
     # load zs data and compute oracle est
     lcfg = cfg.latent
@@ -83,9 +83,9 @@ def plot(cfg: Config):
     obs = obs_load['obs']
 
     if obs_type == 'pp_log':
-        lams = cif_alpha_log(alphas, xs)
+        lams = cif_mu_log(mus, xs)
     elif obs_type == 'pp_relu':
-        lams = cif_alpha_relu(alphas, xs)
+        lams = cif_mu_relu(mus, xs)
     else:
         raise ValueError
 
@@ -110,9 +110,9 @@ def plot(cfg: Config):
     # ax.set_title(r'obs var=' f'{ocfg.ov1}e{ocfg.ov2}; ' + '$x^{0,\ell}$')
     ax[0].set_title(f'xs')
     if obs_type == 'pp_relu':
-        ax[1].set_title('ReLU Link; ' + r'$\alpha$' + f' = {alpha}')
+        ax[1].set_title('ReLU Link; ' + r'$\mu$' + f' = {mu}')
     elif obs_type == 'pp_log':
-        ax[1].set_title('Log Link; ' + r'$\alpha$' + f' = {alpha}')
+        ax[1].set_title('Log Link; ' + r'$\mu$' + f' = {mu}')
     else:
         raise ValueError
     plt.tight_layout()
@@ -146,7 +146,7 @@ def get_plot_dir(cfg):
     ocfg = cfg.obs
     lcfg = cfg.latent
     pcfg = cfg.plot
-    plot_dir = f'data/figs-data/{pcfg.plot_type}/latent-{lcfg.latent_type}/window-{int(2*lcfg.num_freqs)}/K{lcfg.K}/obs-{ocfg.obs_type}/alpha-{ocfg.alpha}'
+    plot_dir = f'data/figs-data/{pcfg.plot_type}/latent-{lcfg.latent_type}/window-{int(2*lcfg.num_freqs)}/K{lcfg.K}/obs-{ocfg.obs_type}/mu-{ocfg.mu}'
     return plot_dir
 
 def plot_synthetic_data_trial(ax, data, trial, title=None, xylabs=None, color='tab:blue'):
