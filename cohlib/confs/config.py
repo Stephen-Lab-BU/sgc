@@ -6,7 +6,7 @@ from hydra.core.config_store import ConfigStore
 
 from .latent import BasicSingleFreq, BasicSingleFreqLog, BasicSingleFreqReLU
 from .obs import GaussianObs, PPLogObs, PPReluObs
-from .model import LowRankToySimpleM1
+from .model import LowRankToySimpleM1, FullRankToySimple, FullRankToyPseudoInv
 
 def register_configs() -> None:
     cs = ConfigStore.instance()
@@ -16,7 +16,9 @@ def register_configs() -> None:
     cs.store(group='obs', name='gaussian', node=GaussianObs)
     cs.store(group='obs', name='pp_log', node=PPLogObs)
     cs.store(group='obs', name='pp_relu', node=PPReluObs)
-    cs.store(group='model', name='lr_eigh', node=LowRankToySimpleM1)
+    cs.store(group='model', name='lowrank_eigh', node=LowRankToySimpleM1)
+    cs.store(group='model', name='fullrank', node=FullRankToySimple)
+    cs.store(group='model', name='fullrank_pinv', node=FullRankToyPseudoInv)
 
 
 def get_sim_config():
@@ -44,7 +46,7 @@ def get_fit_config():
     defaults = [
         {"latent": "single_freq_log"},
         {"obs": "pp_log"},
-        {"model": "lr_eigh"}
+        {"model": "lowrank_eigh"}
     ]
 
     @dataclass 

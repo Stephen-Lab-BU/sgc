@@ -31,7 +31,16 @@ def get_obs_dir(ocfg, latent_dir):
 
 def get_model_subdir(mcfg):
     if mcfg.inherit_lcfg is True:
-        model_subdir =f'model-{mcfg.model_type}/inherit-{mcfg.inherit_lcfg}/m_step-{mcfg.m_step_option}/{mcfg.model_init}-init_eigvals-{mcfg.eigvals_flag}_eigvecs-{mcfg.eigvecs_flag}/newton-{mcfg.num_newton_iters}_em-{mcfg.num_em_iters}'
+        if mcfg.model_type == 'simple_inherit_latent_fullrank':
+            if mcfg.model_init == 'flat':
+                init_oom = jnp.log10(mcfg.scale_init)
+                model_subdir =f'model-{mcfg.model_type}/inherit-{mcfg.inherit_lcfg}/m_step-{mcfg.m_step_option}/{mcfg.model_init}-init_{init_oom}/newton-{mcfg.num_newton_iters}_em-{mcfg.num_em_iters}'
+            else:
+                model_subdir =f'model-{mcfg.model_type}/inherit-{mcfg.inherit_lcfg}/m_step-{mcfg.m_step_option}/{mcfg.model_init}-init/newton-{mcfg.num_newton_iters}_em-{mcfg.num_em_iters}'
+        elif mcfg.model_type == 'simple_inherit_latent_lowrank_eigh':
+            model_subdir =f'model-{mcfg.model_type}/inherit-{mcfg.inherit_lcfg}/m_step-{mcfg.m_step_option}/{mcfg.model_init}-init_eigvals-{mcfg.eigvals_flag}_eigvecs-{mcfg.eigvecs_flag}/newton-{mcfg.num_newton_iters}_em-{mcfg.num_em_iters}'
+        else:
+            raise NotImplementedError
     else:
         raise NotImplementedError
     return model_subdir
@@ -122,6 +131,49 @@ def create_lowrank_eigparams(value_type, params):
         raise ValueError
 
     return eigvals_init, eigvecs_init
+
+def create_fullrank_gamma(value_type, params):
+    nz_model = params['nz_model']
+    J = nz_model.size
+    K = params['K']
+
+    gamma_init = jnp.zeros((J,K,K), dtype=complex)
+
+    if value_type == 'true':
+        raise NotImplementedError
+    
+    elif value_type == 'flat':
+        scale_init = params['scale_init']
+
+        for j in range(J):
+            gamma_init = gamma_init.at[j,:,:].set(jnp.eye(K) * scale_init)
+
+    elif value_type == 'oracle':
+        lcfg = params['lcfg']
+        # true init requires model / data rank match
+        zs_nz = params['zs_nz']
+        gamma_oracle = jnp.einsum('jkl,jil->jkil', zs_nz, zs_nz.conj()).mean(-1)
+
+        gamma_init = gamma_oracle
+
+    elif value_type == 'empirical':
+        print('Using empirical (naive) estimate for initialization.')
+        ocfg = params['ocfg']
+        obs_type = ocfg.obs_type
+        obs = params['obs']
+        if obs_type in ['pp_relu', 'pp_log']:
+            gamma_empirical = naive_estimator(obs, nz_model) * 1e6
+        elif obs_type == 'gaussian':
+            gamma_empirical = naive_estimator(obs, nz_model) 
+        else:
+            raise NotImplementedError
+            
+        gamma_init = gamma_empirical
+
+    else:
+        raise ValueError
+
+    return gamma_init
 
 def get_fixed_params(eigvals_flag, eigvecs_flag, params):
     fixed_params = {}
