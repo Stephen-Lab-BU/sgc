@@ -287,13 +287,13 @@ class LowRankCCN():
         return samples
 
 class CCN():
-    def __init__(self, gamma, dim, freqs, nonzero_inds, inv_flag='standard'):
+    def __init__(self, gamma, freqs, nonzero_inds, inv_flag='standard'):
         self.freqs = freqs
         self.N = freqs.size
         self.nz = nonzero_inds
         self.Nnz = nonzero_inds.size
-        self.dim = dim
-        self.rank = dim
+        self.dim = gamma.shape[-1]
+        self.rank = gamma.shape[-1]
         self.gamma = gamma
         self.inv_flag = inv_flag
 
