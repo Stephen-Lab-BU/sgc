@@ -12,7 +12,7 @@ from cohlib.jax.utils import add0, jax_boilerplate
 from cohlib.utils import pickle_save, pickle_open
 
 from cohlib.confs.latent.simple import create_lrccn_basic_rank1
-from cohlib.confs.utils import get_latent_dir, get_obs_dir
+import cohlib.confs.utils as conf
 from cohlib.confs.config import get_sim_config
 
 jax_boilerplate()
@@ -22,14 +22,16 @@ Config = get_sim_config()
 
 @hydra.main(version_base=None, config_name = "config")
 def run(cfg: Config) -> None:
+    run_path = conf.get_run_path()
+    os.chdir(run_path)
     print('Simulating from config:')
     print(OmegaConf.to_yaml(cfg))
     lcfg = cfg.latent
     ocfg = cfg.obs
 
 
-    latent_dir = get_latent_dir(lcfg)
-    obs_dir = get_obs_dir(ocfg, latent_dir)
+    latent_dir = conf.get_latent_dir(lcfg)
+    obs_dir = conf.get_obs_dir(ocfg, latent_dir)
 
     # Try loading latent according to lcfg; run simulation of no pre-existing
     try: 

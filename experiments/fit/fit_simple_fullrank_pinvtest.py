@@ -22,6 +22,8 @@ Config = get_fit_config()
 
 @hydra.main(version_base=None, config_name = "config")
 def run(cfg: Config) -> None:
+    run_path = conf.get_run_path()
+    os.chdir(run_path)
     print('Fitting model from config:')
     print(OmegaConf.to_yaml(cfg))
     lcfg = cfg.latent
@@ -83,7 +85,9 @@ def run(cfg: Config) -> None:
 
         gamma_init = conf.create_fullrank_gamma(mcfg.model_init, init_params)
 
-        ccn_init = CCN(gamma_init, K, freqs, nz_model)
+        inv_flag = mcfg.get('inv_flag', 'standard')
+        print(f'Setting inv_flag as {inv_flag}')
+        ccn_init = CCN(gamma_init, freqs, nz_model, inv_flag=inv_flag)
         model.initialize_latent(ccn_init)
         model.initialize_observations(obs_params, obs_type)
 

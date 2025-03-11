@@ -17,9 +17,9 @@ from cohlib.jax.dists import naive_estimator
 from cohlib.utils import pickle_save, pickle_open
 
 import cohlib.confs.utils as conf
-from cohlib.confs.latent.simple import BasicSingleFreq, BasicSingleFreqReLU, BasicSingleFreqLog
+from cohlib.confs.latent import BasicSingleFreq, BasicSingleFreqReLU, BasicSingleFreqLog
 from cohlib.confs.obs import GaussianObs, PPReluObs, PPLogObs
-from cohlib.confs.model.simple_lcfg_inherit import FullRankToySimple
+from cohlib.confs.model import FullRankToySimple, FullRankToyPseudoInv
 from cohlib.jax.plot import get_eigval, get_eigvec
 
 
@@ -83,7 +83,7 @@ class PlotParams:
     dims: List[int] = field(default_factory=lambda: [0,1,2])
 
 defaults = [
-    {"plot": "lowrank"},
+    {"plot": "eigrank1"},
     {"latent": "single_freq_log"},
     {"obs": "pp_relu"},
     {"model": "fullrank"}
@@ -98,7 +98,7 @@ class Config:
     model: Any = MISSING
 
 cs = ConfigStore.instance()
-cs.store(group='plot', name='lowrank', node=PlotParams)
+cs.store(group='plot', name='eigrank1', node=PlotParams)
 cs.store(group='latent', name='single_freq', node=BasicSingleFreq)
 cs.store(group='latent', name='single_freq_relu', node=BasicSingleFreqReLU)
 cs.store(group='latent', name='single_freq_log', node=BasicSingleFreqLog)
@@ -106,6 +106,7 @@ cs.store(group='obs', name='gaussian', node=GaussianObs)
 cs.store(group='obs', name='pp_relu', node=PPReluObs)
 cs.store(group='obs', name='pp_log', node=PPLogObs)
 cs.store(group='model', name='fullrank', node=FullRankToySimple)
+cs.store(group='model', name='fullrank_pinv', node=FullRankToyPseudoInv)
 cs.store("config", node=Config)
 
 
@@ -211,7 +212,8 @@ def plot(cfg: Config):
             plt.savefig(savepath)
 
 def get_plot_dir(cfg, dim, funcname):
-    plot_dir = f'data/figs-fit/{cfg.plot.plot_type}/latent-{cfg.latent.latent_type}/fullrank/window-{int(2*cfg.latent.num_freqs)}/K{cfg.latent.K}/obs-{cfg.obs.obs_type}/{cfg.model.model_init}/func-{funcname}/dim-{dim}'
+    inv_flag = cfg.model.get('inv_flag', 'standard')
+    plot_dir = f'data/figs-fit/{cfg.plot.plot_type}/latent-{cfg.latent.latent_type}/fullrank-{inv_flag}/window-{int(2*cfg.latent.num_freqs)}/K{cfg.latent.K}/obs-{cfg.obs.obs_type}/{cfg.model.model_init}/func-{funcname}/dim-{dim}'
     return plot_dir
 
 def plot_eigvec_var_L_subplot(ax, plot_dict, dim, func, funcname):
