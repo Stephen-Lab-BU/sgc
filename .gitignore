@@ -16,5 +16,8 @@ experiments/simulate/outputs
 experiments/plot/outputs
 experiments/data
 experiments/deprecated
+*.bash.e*
+*.bash.o*
+experiments/scripts/outputs
 scratch.ipynb
 __pycache__
