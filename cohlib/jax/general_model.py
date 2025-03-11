@@ -81,7 +81,7 @@ class GeneralToyModel(LatentFourierModel):
                 gamma_update = self.m_step(alphas_outer, 2*Upss, self.m_step_params)
                 inv_flag = self.ccn.inv_flag
 
-                ccn_update = CCN(gamma_update, dim=self.K, freqs=self.freqs, nonzero_inds=self.nz, inv_flag=inv_flag)
+                ccn_update = CCN(gamma_update, freqs=self.freqs, nonzero_inds=self.nz, inv_flag=inv_flag)
 
             else:
                 m_step_params['ccn_prev'] = self.ccn
