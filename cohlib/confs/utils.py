@@ -2,7 +2,7 @@ import os
 import jax.numpy as jnp
 from omegaconf import OmegaConf
 
-from cohlib.confs.latent.simple import create_lrccn_basic_rank1
+from cohlib.confs.latent.simple import create_lrccn_basic_rank1, create_ccn_basic_fullrank
 from cohlib.jax.dists import naive_estimator
 
 # Paths are structured as:
@@ -10,12 +10,20 @@ from cohlib.jax.dists import naive_estimator
 # with Data/LatentType/Window/K/L/LatentSeed containing pkl with zs
 # and Data/LatentType/Window/K/L/LatentSeed/ObsType/ObsParams/ObsSeed/ containaing pkl with observations (and summary fig if produced)
 
+def get_run_path():
+    return '/projectnb/stephenlab/jtauber/cohlib/experiments'
 def omega(cfg):
     return OmegaConf.create(cfg)
 
 def get_latent_dir(lcfg):
     window = int(2*lcfg.num_freqs)
-    latent_dir = f'data/latent-{lcfg.latent_type}/window{window}/K{lcfg.K}/L{lcfg.L}/lseed{lcfg.seed}'
+    if lcfg.K == lcfg.rank:
+        rank_name = 'fullrank'
+    else:
+        rank_name = f'rank{lcfg.rank}'
+
+    latent_dir = f'data/latent-{lcfg.latent_type}_{rank_name}/window{window}/gseed{lcfg.gamma_seed}/K{lcfg.K}/L{lcfg.L}/lseed{lcfg.seed}'
+
     return latent_dir
 
 def get_obs_dir(ocfg, latent_dir):
@@ -31,7 +39,7 @@ def get_obs_dir(ocfg, latent_dir):
 
 def get_model_subdir(mcfg):
     if mcfg.inherit_lcfg is True:
-        if mcfg.model_type == 'simple_inherit_latent_fullrank':
+        if mcfg.model_type == 'simple_inherit_latent_fullrank' or mcfg.model_type == 'simple_inherit_latent_fullrank_pinv':
             if mcfg.model_init == 'flat':
                 init_oom = jnp.log10(mcfg.scale_init)
                 model_subdir =f'model-{mcfg.model_type}/inherit-{mcfg.inherit_lcfg}/m_step-{mcfg.m_step_option}/{mcfg.model_init}-init_{init_oom}/newton-{mcfg.num_newton_iters}_em-{mcfg.num_em_iters}'
@@ -63,7 +71,7 @@ def get_obs_params(ocfg):
     
     return obs_params, obs_type
 
-def create_lowrank_eigparams(value_type, params):
+def create_lowrank_init_eigparams(value_type, params):
     nz_model = params['nz_model']
     J = nz_model.size
     rank = params['rank']
@@ -180,12 +188,12 @@ def get_fixed_params(eigvals_flag, eigvecs_flag, params):
 
     if eigvals_flag != 'fit':
         fixed_type = eigvals_flag 
-        fixed_eigvals, _ = create_lowrank_eigparams(fixed_type, params)
+        fixed_eigvals, _ = create_lowrank_init_eigparams(fixed_type, params)
         fixed_params['eigvals'] = fixed_eigvals
 
     if eigvecs_flag != 'fit':
         fixed_type = eigvecs_flag 
-        _, fixed_eigvecs = create_lowrank_eigparams(fixed_type, params)
+        _, fixed_eigvecs = create_lowrank_init_eigparams(fixed_type, params)
         fixed_params['eigvecs'] = fixed_eigvecs
     
     return fixed_params
