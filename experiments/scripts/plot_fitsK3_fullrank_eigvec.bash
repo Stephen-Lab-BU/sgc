@@ -13,10 +13,12 @@
 K=3
 init='empirical'
 scale_init=1000000
-for seed in 1 2 3 4 
+# for seed in 1 2 3 4 
+for seed in 0
 do
-    python plot/plot_fullrank_fit_eigvec.py latent=single_freq_log obs=pp_log model=fullrank \
+    python ../plot/plot_fullrank_fit_eigvec.py latent=single_freq_log obs=pp_log model=fullrank_pinv \
     latent.seed=$seed obs.seed=$seed \
-    model.model_init=$init 'plot.Ls=[10,25,50,100]' 'plot.thetas=[-2.0,-1.0,0.0,2.0,4.0]'
+    model.model_init=$init 'plot.Ls=[5,10]' 'plot.thetas=[-2.0,0.0,2.0]'
+    # model.model_init=$init 'plot.Ls=[10,25,50,100]' 'plot.thetas=[-2.0,-1.0,0.0,2.0,4.0]'
     # model.model_init=$init model.scale_init=$scale_init 'plot.Ls=[10,25,50,100]' 'plot.thetas=[-2.0,-1.0,0.0,2.0,4.0]'
 done

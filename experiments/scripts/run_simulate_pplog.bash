@@ -8,21 +8,23 @@
 OMP_NUM_THREADS=$NSLOTS
 conda activate sgc_env
 
-init='empirical'
 
-# for seed in 0 1 2 3 4 
-# for seed in 0 #1 2 3 4 
-# for seed in {19..24}
+gseed=0
+K=3
 for seed in {0..19}
 do
     for L in 3 5 10 25
     do
         # for mu in -2.0 -1.0 0.0 2.0 4.0
-        # for mu in -2.0 0.0 2.0 
+        # for mu in -2.0 -1.0 0.0 2.0 
         for mu in -1.0
         do
-            # python ../simulate/simulate_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed
-            python ../fit/fit_simple_fullrank.py latent=single_freq_log obs=pp_log model=fullrank latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed model.model_init=$init 
+            python ../simulate/simulate_simple.py latent=single_freq_log obs=pp_log latent.gamma_seed=$gseed latent.K=$K latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed
         done
     done
 done
+
+# seed=42
+# L=27
+# mu=1.9
+# python simulate/simulate_simple.py latent=single_freq_log obs=pp_log latent.L=$L latent.seed=$seed obs.mu=$mu obs.seed=$seed
