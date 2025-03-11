@@ -6,8 +6,8 @@ import hydra
 from omegaconf import OmegaConf
 import jax.numpy as jnp
 
-from cohlib.jax.lr_model import LowRankToyModel
-from cohlib.jax.dists import LowRankCCN
+from cohlib.jax.general_model import GeneralToyModel
+from cohlib.jax.dists import CCN
 from cohlib.jax.utils import jax_boilerplate
 from cohlib.utils import pickle_save, pickle_open
 
@@ -22,6 +22,8 @@ Config = get_fit_config()
 
 @hydra.main(version_base=None, config_name = "config")
 def run(cfg: Config) -> None:
+    run_path = conf.get_run_path()
+    os.chdir(run_path)
     print('Fitting model from config:')
     print(OmegaConf.to_yaml(cfg))
     lcfg = cfg.latent
@@ -66,7 +68,7 @@ def run(cfg: Config) -> None:
             freqs = jnp.arange(N)
             nz_model = jnp.array([lcfg.target_freq_ind])
 
-            init_params = {'rank': mcfg.model_rank, 
+            init_params = {'rank': K, 
                         'nz_model': nz_model,
                         'scale_init': mcfg.scale_init,
                         'K': K,
@@ -79,29 +81,22 @@ def run(cfg: Config) -> None:
 
 
         # create, initialize, and fit model
-        model = LowRankToyModel()
+        model = GeneralToyModel()
 
-        eigvals_init, eigvecs_init = conf.create_lowrank_eigparams(mcfg.model_init, init_params)
+        gamma_init = conf.create_fullrank_gamma(mcfg.model_init, init_params)
 
-        fixed_params = conf.get_fixed_params(mcfg.eigvals_flag, mcfg.eigvecs_flag, init_params)
-        if 'eigvals' in fixed_params.keys():
-            eigvals_init = fixed_params['eigvals']
-        if 'eigvecs' in fixed_params.keys():
-            eigvecs_init = fixed_params['eigvecs']
-
-        lrccn_init = LowRankCCN(eigvals_init, eigvecs_init, K, freqs, nz_model)
-        model.initialize_latent(lrccn_init)
+        ccn_init = CCN(gamma_init, freqs, nz_model)
+        model.initialize_latent(ccn_init)
         model.initialize_observations(obs_params, obs_type)
 
         fit_params = {'num_em_iters': mcfg.num_em_iters, 
                     'num_newton_iters': mcfg.num_newton_iters,
-                    'm_step_option': mcfg.m_step_option,
-                    'fixed_params': fixed_params}
+                    'm_step_option': mcfg.m_step_option}
         model.fit_em(obs, fit_params)
 
         # save results
         cfg_resolved = OmegaConf.to_container(cfg, resolve=True)
-        save_dict = {'cfg': cfg_resolved, 'lrccn_est':  model.lrccn, 'lrccn_init': lrccn_init, 'track': model.track}
+        save_dict = {'cfg': cfg_resolved, 'ccn_est':  model.ccn, 'ccn_init': ccn_init, 'track': model.track}
 
         if not os.path.exists(model_dir):
             path = pathlib.Path(model_dir)
