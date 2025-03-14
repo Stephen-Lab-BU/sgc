@@ -110,7 +110,7 @@ def m_step_fullrank(alphas_outer, Upss, options=None):
     return (alphas_outer + Upss).mean(-1)
 
 def m_step_lowrank_eigh(alphas_outer, Upss, params):
-    lrccn_prev = params['lrccn_prev']
+    lrccn_prev = params['ccn_prev']
     rank = lrccn_prev.rank
     J = lrccn_prev.Nnz
     fixed_params = params['fixed_params']
