@@ -11,6 +11,18 @@ def add_dc(x, dc):
     return with_dc
 add0 = partial(add_dc, dc=0)
 
+
+def naive_estimator(spikes, nonzero_inds=None):
+    "spikes has shape (time, unit, trial)"
+    n_f0 = jnp.fft.rfft(spikes, axis=0)
+    n_f = n_f0[1:,:,:]
+    naive_est = jnp.einsum('jkl,jil->jkil', n_f, n_f.conj()).mean(-1)
+
+    if nonzero_inds is None:
+        return naive_est
+    else:
+        return naive_est[nonzero_inds, :, :]
+
 def jax_boilerplate():
     os.environ["XLA_FLAGS"] = f"--xla_force_host_platform_device_count={multiprocessing.cpu_count()}"
     jax.config.update('jax_platform_name', 'cpu')
