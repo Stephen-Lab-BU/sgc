@@ -17,3 +17,42 @@ def jax_boilerplate():
     platform = jax.lib.xla_bridge.get_backend().platform.casefold()
     print("Platform: ", platform)
     print(len(jax.devices()))
+
+def rotate_eigvecs(eigvecs):
+    """
+    Args:
+        eigvecs: J x K x R
+    """
+
+    J = eigvecs.shape[0]
+    R = eigvecs.shape[2]
+
+    rotated = jnp.zeros_like(eigvecs)
+
+    for j in range(J):
+        thetas = jnp.angle(eigvecs[j,0,:])
+        rotations = jnp.exp(-1j*thetas)
+
+        rotated = rotated.at[j,:,:].set(eigvecs[j,:,:] * rotations[None,:])
+    
+    return rotated
+
+def stdize_eigvecs(eigvecs):
+    """
+    Args:
+        eigvecs: J x K x R
+    """
+
+    J = eigvecs.shape[0]
+    R = eigvecs.shape[2]
+
+    stdized = jnp.zeros_like(eigvecs)
+
+    for j in range(J):
+        for r in range(R):
+            if eigvecs[j,0,r].real < 0:
+                stdized = stdized.at[j,:,r].set(-eigvecs[j,:,r])
+            else:
+                stdized = stdized.at[j,:,r].set(eigvecs[j,:,r])
+    
+    return stdized
