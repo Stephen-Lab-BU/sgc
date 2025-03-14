@@ -1,8 +1,7 @@
 import jax.numpy as jnp
 import jax.random as jr
 
-# TODO move LR CCN dist object to this file
-# TODO move sampling functionality of CCN to dist object method
+# TODO split up latent and observations into separate files
 
 # TODO write classes for observation dist and move functionality here to methods
 

@@ -7,7 +7,7 @@ import jax.random as jr
 import jax.numpy as jnp
 
 from cohlib.jax.optim import JaxOptim
-from cohlib.jax.dists import LowRankCCN, CCN
+from cohlib.jax.latent import LowRankCCN, CCN
 
 # TODO make this actually useful or discard
 class LatentFourierModel(ABC):
@@ -29,9 +29,6 @@ class LatentFourierModel(ABC):
         pass
 
 class GeneralToyModel(LatentFourierModel):
-    # in place of lrccn - what do we need? 
-    # for quick version we can subsitute lrccn for ccn, of which lrccn is a sub-class with special properties
-    # m_step is easy enough 
     def __init__(self, track_params=True):
         self.track = {'ccn': []}
         self.track_ccn = track_params
