@@ -1,44 +1,20 @@
 from abc import abstractmethod, ABC
 from functools import partial
-from typing_extensions import Protocol
 
 import jax
 import jax.numpy as jnp
 
 from cohlib.jax.observations import get_e_step_cost_func
 
-# OK - stop for now and do concrete part, 
-# update tomorrow after looking at dynamax for some ideas on how to structure well
-class ObservationDist(ABC):
-    def __init__(self, dist_type, params):
-        self.dist_type = dist_type
-        self.params = params
-
-    @abstractmethod
-    def log_ll(self, data):
-        pass
-
-    @abstractmethod
-    def update_params(self, params):
-        pass
-
-class LatentDist(ABC):
-    @abstractmethod
-    def init(self, params):
-        pass
-
-    @abstractmethod
-    def log_ll(self):
-        pass
-
+# TODO make this actually useful or discard
 class LatentFourierModel(ABC):
     """
     Abstract class to define structure all models in package follow.
     """
 
     @abstractmethod
-    def initialize_latent(self, dist_type: str, params: dict) -> None:
-        self.latent_type = dist_type
+    def initialize_latent(self):
+        pass
         # self.latent = create_latent(dist_type, params)
 
     @abstractmethod
@@ -49,63 +25,8 @@ class LatentFourierModel(ABC):
     def fit_em(self):
         pass
 
-
-
     
-class ToyModel(LatentFourierModel):
-    def __init__(self):
-        self.track = {'gamma': []}
-
-    def initialize_latent(self, gamma, freqs, nonzero_inds):
-        assert gamma.shape[1] == gamma.shape[2]
-        self.gamma = gamma
-        self.freqs = freqs
-        self.nz = nonzero_inds
-        self.K = gamma.shape[-1]
-
-    def initialize_observations(self, obs_params, obs_type):
-        self.obs_params = obs_params
-        self.obs_type = obs_type
-
-    def fit_em(self, data, num_em_iters, num_newton_iters, m_step_option='standard',
-                m_step_params=None):
-        params = {'obs': self.obs_params,
-                  'freqs': self.freqs,
-                  'nonzero_inds': self.nz,
-                  'K': self.K}
-
-        if m_step_option == 'standard':
-            self.m_step = m_step
-            self.m_step_params = None
-        elif m_step_option == 'low-rank':
-            self.m_step = m_step_lowrank
-            self.m_step_params = m_step_params
-        else:
-            raise NotImplementedError
-    
-
-        for r in range(num_em_iters):
-            print(f'EM Iter {r+1}')
-            gamma_inv = jnp.zeros_like(self.gamma)
-            gamma_inv_nz = jnp.linalg.inv(self.gamma[self.nz,:,:])
-            gamma_inv = gamma_inv.at[self.nz,:,:].set(gamma_inv_nz)
-            optimizer = JaxOptim(data, gamma_inv, params, self.obs_type, num_iters=num_newton_iters)
-            alphas, Upss = optimizer.run_e_step_par()
-
-            alphas_outer = jnp.einsum('nkl,nil->nkil', alphas, alphas.conj())
-
-            gamma_update = jnp.zeros_like(self.gamma)
-            gamma_update_nz = self.m_step(alphas_outer, 2*Upss, m_step_params)
-            # NOTE Upsilon is doubled - this empirically matches behavior of implementation using 'real representation'. 
-            # Believe the reason is that we are effectively using only 'half' of the variables if considering our optimization 
-            # in terms of CR-Calculus (Wirtinger calculus). See "The Complex Gradient Operator and the CR Calculus" (Kreutz-Delgado, 2009)
-            # at https://arxiv.org/abs/0906.4835
-
-            self.track['gamma'].append(gamma_update_nz)
-            self.gamma = gamma_update.at[self.nz,:,:].set(gamma_update_nz)
-
-        
-
+# deprecate
 # TODO Rename to 'Laplace approx' and clarify 
 class JaxOptim():
     def __init__(self, data, gamma_inv, params, obs_type, track=False, num_iters=10):
@@ -181,6 +102,7 @@ class JaxOptim():
 
         return alphas, Upss
 
+    # TODO review and remove if no longer needed
     def run_e_step_par_ts(self, data, num_devices):
         Nnz = self.Nnz
         
@@ -272,44 +194,3 @@ def newton_step(zs_est, zs_grad, hess_sel):
     zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_sel_inv, zs_grad)
 
     return zs_est, hess_sel_inv 
-
-def m_step(alphas_outer, Upss, options=None):
-    return (alphas_outer + Upss).mean(-1)
-
-def m_step_lowrank(alphas_outer, Upss, options):
-    rank = options['rank']
-    gamma_est_standard = (alphas_outer + Upss).mean(-1)
-    # print(f'gamma_est_standard shape: {gamma_est_standard.shape}')
-    J = gamma_est_standard.shape[0]
-
-    gamma_est_lowrank = jnp.zeros_like(gamma_est_standard)
-    for j in range(J):
-        evals, evecs = jnp.linalg.eigh(gamma_est_standard[j,:,:])
-
-        evals_lowrank = evals[::-1].at[rank:].set(0)[::-1]
-        gamma_est_lowrank = gamma_est_lowrank.at[j,:,:].set(evecs @ jnp.diag(evals_lowrank) @ evecs.conj().T)
-
-    return gamma_est_lowrank
-
-
-
-# Utility Functions - Should be moved later to alternative file
-####################
-class ParameterSet(Protocol):
-    pass
-
-
-
-class OptimResult():
-    def __init__(self, zs_est, hess, track_zs=None, track_cost=None, track_grad=None, track_hess=None):
-        self.zs_est = zs_est
-        self.hess = hess
-        self.track_zs = track_zs
-        self.track_cost = track_cost
-        self.track_grad = track_grad
-        self.track_hess = track_hess
-
-class OptimResultReal():
-    def __init__(self, vs_est, hess_real):
-        self.vs_est = vs_est
-        self.hess_real = hess_real
