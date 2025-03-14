@@ -1,11 +1,108 @@
-import os 
-import multiprocessing
 import jax
-
-from functools import partial
+import jax.random as jr
 import jax.numpy as jnp
 
 from cohlib.jax.utils import add0
+
+# TODO write classes for observation dist and move functionality here to methods
+
+def sample_obs(xs, params):
+    if params['obs_type'] == 'gaussian':
+        sample_func = sample_obs_gaussian
+    elif params['obs_type'] == 'pp_relu':
+        sample_func = sample_obs_pp_relu
+    elif params['obs_type'] == 'pp_log':
+        sample_func = sample_obs_pp_log
+    else: 
+        raise NotImplementedError
+
+    return sample_func(xs, params) 
+
+def sample_obs_pp_poisson(xs, params, link):
+    if link == 'relu':
+        cif = cif_mu_relu
+    elif link == 'log':
+        cif = cif_mu_log
+    else: 
+        raise NotImplementedError
+
+    seed = params['seed']
+    mu = params['mu']
+    delta = params['delta']
+
+    ork = jr.key(seed)
+    mu = mu
+    delta = delta
+    C = 1
+    K = xs.shape[1]
+    if jnp.ndim(mu) == 0:
+        mus = jnp.ones(K)*mu
+    else:
+        assert mu.ndim == 1
+        assert mu.size == K
+        mus = mu
+    lams_single = cif(mus, xs)
+    lams = jnp.stack([lams_single for _ in range(C)], axis=1)
+    samples = jr.poisson(ork, lams*delta)
+    obs = samples.squeeze()
+    params = {'mu': mu, 'delta': delta}
+
+    return obs
+
+def sample_obs_pp_relu(xs, params): # rk, xs, mu, C=1, delta=1e-3):
+    return sample_obs_pp_poisson(xs, params, 'relu')
+
+def sample_obs_pp_log(xs, params): # rk, xs, mu, C=1, delta=1e-3):
+    return sample_obs_pp_poisson(xs, params, 'log')
+
+def cif_mu_log(mus, xs):
+    return jnp.exp(mus[None,:,None] + xs)
+
+def cif_mu_relu(mus, xs):
+    lams = mus[None,:,None] + xs
+    lams = lams.at[lams < 0].set(0)
+    return lams
+
+
+# TODO clean up params usage 
+def sample_obs_gaussian(xs, params):
+    ov1 = params['ov1']
+    ov2 = params['ov2']
+    seed = params['seed']
+    print(f"Sampling Gaussian observations with variance {ov1}e^{ov2}")
+    ork = jr.key(seed)
+    obs_var = ov1 * 10**ov2
+    params = {'obs_var': obs_var}
+    obs = xs + jr.normal(ork, xs.shape)*jnp.sqrt(obs_var)
+
+    return obs
+
+
+def sample_spikes_from_lams(rk, lams, C, delta=1, group_axis=1, obs_model='bernoulli'):
+    if obs_model == 'bernoulli':
+        sampler = _c_sample_func_bernoulli(rk, C)
+    elif obs_model == 'poisson':
+        sampler = _c_sample_func_poisson(rk, C)
+    else:
+        raise ValueError
+    samples = jnp.apply_along_axis(sampler, group_axis, lams*delta)
+    return samples
+
+def _c_sample_func_poisson(rk, C):
+    def func(x):
+        reps = jnp.tile(x, C).reshape(C,-1)
+        samples = jr.poisson(rk, reps)
+        return samples
+    return func
+
+def _c_sample_func_bernoulli(rk, C):
+    def func(x):
+        reps = jnp.tile(x, C).reshape(C,-1)
+        samples = jr.binomial(rk, 1, reps)
+        return samples
+    return func
+
+
 
 def _obs_cost_gaussian(z, data, K, N, nonzero_inds, params):
     obs_var = params['obs_var']
@@ -25,6 +122,7 @@ def _obs_cost_gaussian(z, data, K, N, nonzero_inds, params):
 
     return obs_cost
 
+# TODO deprecate if unused
 @jax.jit
 def jitted_pp_relu_calc_cost(xs, mu, data, delta):
     lams = xs + mu
@@ -91,127 +189,3 @@ def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params):
     return obs_cost
      
 
-
-# TODO move this to models.py and specify that this is for *FULL RANK*
-def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type):
-    if trial_data.ndim == 2:
-        K = trial_data.shape[1]
-    else:
-        K = params['K']
-    # obs_var = params['obs_var']
-    obs_params = params['obs']
-    freqs = params['freqs']
-    N = freqs.size
-    nz_inds = params['nonzero_inds']
-
-    def calc_obs_cost(z, data, K, N, nonzero_inds, obs_params):
-        if obs_type == 'gaussian':
-            obs_cost_func = _obs_cost_gaussian
-        elif obs_type == 'pp_relu':
-            obs_cost_func = _obs_cost_pp_relu
-        elif obs_type == 'pp_log':
-            obs_cost_func = _obs_cost_pp_log
-        else:
-            return NotImplementedError
-
-        obs_cost = obs_cost_func(z, data, K, N, nonzero_inds, obs_params)
-
-        return obs_cost
-
-    def calc_latent_cost(z, Gpi, K, N, nonzero_inds):
-        zs = jnp.zeros((N,K), dtype=complex)
-        zs = zs.at[nonzero_inds,:].set(z)
-        latent_ll = -jnp.einsum('kn,nki,ni->', zs.conj().T, Gpi, zs) # pylint: disable=invalid-unary-operand-type
-        latent_cost = -latent_ll
-
-        return latent_cost
-
-    @jax.jit
-    def cost_func(z):
-        obs_cost = calc_obs_cost(z, trial_data, K, N, nz_inds, obs_params) 
-        latent_cost = calc_latent_cost(z, gamma_prev_inv, K, N, nz_inds)
-        cost = obs_cost + latent_cost
-        return cost
-
-    return cost_func
-
-# E-Step evaluation code moved into model object (models.py)
-# def e_step_par(data, gamma_prev_inv, params, obs_type, max_iter=5, Ups_diag=False, return_mus=False, conj_hess=False):
-    
-#     K = data.shape[1]
-#     num_devices = len(jax.devices())
-#     Nnz = params['nonzero_inds'].size
-#     diag_mask = jnp.stack([jnp.eye(K) for n in range(Nnz)])
-
-#     L = data.shape[2]
-
-#     mus_outer = jnp.zeros((Nnz,K,K,L), dtype=complex)
-#     zs_init = jnp.zeros((Nnz,K), dtype=complex)
-
-#     def trial_optimizer(trial, batch, gpi, p, obs_type):
-
-#         trial_data = batch[:,:,trial]
-#         cost_func = get_e_step_cost_func(trial_data, gpi, p, obs_type)
-#         cost_grad = jax.grad(cost_func, holomorphic=True)
-#         cost_hess = jax.hessian(cost_func, holomorphic=True)
-#         zs_est = zs_init
-
-#         for _ in range(max_iter):
-#             zs_hess = cost_hess(zs_est)
-#             hess_sel = jnp.stack([zs_hess[n,:,n,:] for n in range(Nnz)])
-#             if conj_hess:
-#                 hess_sel = hess_sel.conj()
-#             hess_sel_inv = jnp.linalg.inv(hess_sel)
-
-#             zs_grad = cost_grad(zs_est).conj()
-#             zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_sel_inv, zs_grad)
-
-#             # _cost = cost_func(zs_est)
-#             # jax.debug.breakpoint()
-
-#         zs_est = zs_est.reshape((Nnz,K))
-#         mu_outer = jnp.einsum('nk,ni->nki', zs_est, zs_est.conj())
-
-#         if Ups_diag is True:
-#             Ups = hess_sel_inv*diag_mask
-#         else:
-#             Ups = hess_sel_inv
-
-#         if return_mus:
-#             return [zs_est, mu_outer], Ups
-#         else:
-#             return mu_outer, Ups
-
-
-#     num_batches = jnp.ceil(L/num_devices).astype(int)
-#     mus_res = []
-#     Ups_res = []
-#     for b in range(num_batches):
-#         batch_data = data[:,:,b*num_devices:b*num_devices+num_devices]
-#         func = partial(trial_optimizer,
-#             batch=batch_data,
-#             gpi=gamma_prev_inv,
-#             p=params,
-#             obs_type=obs_type)
-#         if b == num_batches - 1:
-#             num_run_trials = b*num_devices
-#             remaining = L - num_run_trials
-#             batch_res = jax.pmap(func)(jnp.arange(remaining))
-#             mus_res.append(batch_res[0])
-#             Ups_res.append(batch_res[1])
-#         else:
-#             batch_res = jnp.arange(num_devices)
-#             batch_res = jax.pmap(func)(jnp.arange(num_devices))
-#             mus_res.append(batch_res[0])
-#             Ups_res.append(batch_res[1])
-
-#     Upss = jnp.moveaxis(jnp.concatenate(Ups_res, axis=0), 0, -1)
-#     if return_mus:
-#         mus_temp = [x[0] for x in mus_res]
-#         mus = jnp.moveaxis(jnp.concatenate(mus_temp, axis=0), 0, -1)
-#         mus_outer_temp = [x[1] for x in mus_res] 
-#         mus_outer = jnp.moveaxis(jnp.concatenate(mus_outer_temp, axis=0), 0, -1)
-#         return [mus, mus_outer], Upss
-#     else:
-#         mus_outer = jnp.moveaxis(jnp.concatenate(mus_res, axis=0), 0, -1)
-#         return mus_outer, Upss
