@@ -198,13 +198,11 @@ def m_step_lowrank_eigvec(alphas_outer, Upss, eigvals, lrccn_prev, params):
     return eigvals, eigvecs_update
 
 
-
+# TODO clean up m_step options and deprecate unused
 def m_step_lowrank_custom(alphas_outer, Upss, params):
     lrccn_prev = params['lrccn_prev']
     rank = lrccn_prev.rank
-    J = lrccn_prev.Nnz
     ts_flag = params.get('ts_flag')
-    ts_flag2 = params.get('ts_flag2')
 
     fixed_u_mods = ['fixed_u_true', 'fixed_u_oracle']
     fixed_eigval_mods = ['fixed_eigval_true', 'fixed_eigval_oracle']

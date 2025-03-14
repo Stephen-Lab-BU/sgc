@@ -37,10 +37,7 @@ class JaxOptim():
 
     def run_e_step_par(self):
         data = self.data
-        Nnz = self.Nnz
         num_devices = self.num_devices
-        
-        K = data.shape[1]
         L = data.shape[2]
 
         num_batches = jnp.ceil(L/num_devices).astype(int)
@@ -83,9 +80,6 @@ class JaxOptim():
 
     # TODO review and remove if no longer needed
     def run_e_step_par_ts(self, data, num_devices):
-        Nnz = self.Nnz
-        
-        K = data.shape[1]
         L = data.shape[2]
 
         num_batches = jnp.ceil(L/num_devices).astype(int)
@@ -174,6 +168,10 @@ def newton_step(zs_est, zs_grad, hess_sel):
 
     return zs_est, hess_sel_inv 
 
+# TODO this works for now, but next step should improve latent/observation spec 
+# TODO make calculating obs_cost and latent_cost methods of CCN and Obs objects
+# TODO make Obs for convenience, be able to access *trial* data within Obs object easy
+    # or even make Obs object a collection of trials 
 def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type):
     if trial_data.ndim == 2:
         K = trial_data.shape[1]

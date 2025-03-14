@@ -37,7 +37,6 @@ def rotate_eigvecs(eigvecs):
     """
 
     J = eigvecs.shape[0]
-    R = eigvecs.shape[2]
 
     rotated = jnp.zeros_like(eigvecs)
 
