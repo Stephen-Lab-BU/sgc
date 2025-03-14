@@ -6,8 +6,27 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 
-from cohlib.jax.models import LatentFourierModel, JaxOptim
+from cohlib.jax.optim import JaxOptim
 from cohlib.jax.dists import LowRankCCN, CCN
+
+# TODO make this actually useful or discard
+class LatentFourierModel(ABC):
+    """
+    Abstract class to define structure all models in package follow.
+    """
+
+    @abstractmethod
+    def initialize_latent(self):
+        pass
+        # self.latent = create_latent(dist_type, params)
+
+    @abstractmethod
+    def initialize_observations(self):
+        pass
+
+    @abstractmethod
+    def fit_em(self):
+        pass
 
 class GeneralToyModel(LatentFourierModel):
     # in place of lrccn - what do we need? 
