@@ -3,7 +3,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from cohlib.jax.observations import get_e_step_cost_func
+from cohlib.jax.observations import _obs_cost_gaussian, _obs_cost_pp_log, _obs_cost_pp_relu
 
 # deprecate
 # TODO Rename to 'Laplace approx' and clarify 
@@ -173,3 +173,45 @@ def newton_step(zs_est, zs_grad, hess_sel):
     zs_est = zs_est - jnp.einsum('nki,ni->nk', hess_sel_inv, zs_grad)
 
     return zs_est, hess_sel_inv 
+
+def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type):
+    if trial_data.ndim == 2:
+        K = trial_data.shape[1]
+    else:
+        K = params['K']
+    # obs_var = params['obs_var']
+    obs_params = params['obs']
+    freqs = params['freqs']
+    N = freqs.size
+    nz_inds = params['nonzero_inds']
+
+    def calc_obs_cost(z, data, K, N, nonzero_inds, obs_params):
+        if obs_type == 'gaussian':
+            obs_cost_func = _obs_cost_gaussian
+        elif obs_type == 'pp_relu':
+            obs_cost_func = _obs_cost_pp_relu
+        elif obs_type == 'pp_log':
+            obs_cost_func = _obs_cost_pp_log
+        else:
+            return NotImplementedError
+
+        obs_cost = obs_cost_func(z, data, K, N, nonzero_inds, obs_params)
+
+        return obs_cost
+
+    def calc_latent_cost(z, Gpi, K, N, nonzero_inds):
+        zs = jnp.zeros((N,K), dtype=complex)
+        zs = zs.at[nonzero_inds,:].set(z)
+        latent_ll = -jnp.einsum('kn,nki,ni->', zs.conj().T, Gpi, zs) # pylint: disable=invalid-unary-operand-type
+        latent_cost = -latent_ll
+
+        return latent_cost
+
+    @jax.jit
+    def cost_func(z):
+        obs_cost = calc_obs_cost(z, trial_data, K, N, nz_inds, obs_params) 
+        latent_cost = calc_latent_cost(z, gamma_prev_inv, K, N, nz_inds)
+        cost = obs_cost + latent_cost
+        return cost
+
+    return cost_func

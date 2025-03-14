@@ -1,6 +1,5 @@
 from abc import abstractmethod, ABC
 from functools import partial
-from typing_extensions import Protocol
 
 import jax
 import jax.random as jr
