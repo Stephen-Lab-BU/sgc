@@ -1,6 +1,7 @@
 *.ipynb_checkpoints
 .vscode
 .pytest_cache
+*.egg-info
 hydra/refac_pprelu_obs/outputs
 hydra/refac_pprelu_obs/figs
 hydra/refac_pprelu_obs/batch

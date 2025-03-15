@@ -11,13 +11,12 @@ import jax.numpy as jnp
 import numpy
 import matplotlib.pyplot as plt
 
-from cohlib.jax.utils import jax_boilerplate, add0
-from cohlib.utils import pickle_open
+from cohlib.utils import jax_boilerplate, add0, pickle_open
 
 import cohlib.confs.utils as conf
 from cohlib.confs.latent import BasicSingleFreqLog, BasicSingleFreqReLU
 from cohlib.confs.obs import PPLogObs, PPReluObs
-from cohlib.jax.dists import cif_mu_log, cif_mu_relu
+from cohlib.dists import cif_mu_log, cif_mu_relu
 
 
 jax_boilerplate()

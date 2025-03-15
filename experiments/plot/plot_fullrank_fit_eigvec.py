@@ -1,4 +1,3 @@
-import time
 import os
 import pathlib
 from dataclasses import dataclass, field
@@ -6,21 +5,18 @@ from typing import Any, List
 import glob as glob
 
 import hydra
-from hydra import compose
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import MISSING
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
-from cohlib.jax.utils import jax_boilerplate
-from cohlib.jax.dists import naive_estimator
-from cohlib.utils import pickle_save, pickle_open
+from cohlib.utils import jax_boilerplate, naive_estimator, pickle_open
 
 import cohlib.confs.utils as conf
 from cohlib.confs.latent import BasicSingleFreq, BasicSingleFreqReLU, BasicSingleFreqLog
 from cohlib.confs.obs import GaussianObs, PPReluObs, PPLogObs
 from cohlib.confs.model import FullRankToySimple, FullRankToyPseudoInv
-from cohlib.jax.plot import get_eigval, get_eigvec
+from cohlib.plot import get_eigvec
 
 
 jax_boilerplate()

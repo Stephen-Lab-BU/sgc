@@ -6,13 +6,12 @@ import hydra
 from omegaconf import OmegaConf
 import jax.numpy as jnp
 
-from cohlib.jax.general_model import GeneralToyModel
-from cohlib.jax.dists import CCN
-from cohlib.jax.utils import jax_boilerplate
-from cohlib.utils import pickle_save, pickle_open
-
 import cohlib.confs.utils as conf
 from cohlib.confs.config import get_fit_config
+from cohlib.general_model import GeneralToyModel
+from cohlib.latent import CCN
+from cohlib.utils import jax_boilerplate, pickle_save, pickle_open
+
 
 
 jax_boilerplate()

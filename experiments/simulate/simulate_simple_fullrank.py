@@ -7,12 +7,11 @@ from omegaconf import OmegaConf
 import jax.numpy as jnp
 import jax.random as jr
 
-from cohlib.jax.dists import sample_obs
-from cohlib.jax.utils import add0, jax_boilerplate
-from cohlib.utils import pickle_save, pickle_open
+from cohlib.observations import sample_obs
+from cohlib.utils import add0, jax_boilerplate, pickle_save, pickle_open
 
-from cohlib.confs.latent.simple import create_ccn_basic_fullrank
 import cohlib.confs.utils as conf
+from cohlib.confs.latent import create_ccn_basic_fullrank
 from cohlib.confs.config import get_sim_config
 
 jax_boilerplate()

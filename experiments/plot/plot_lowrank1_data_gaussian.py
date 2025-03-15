@@ -1,4 +1,3 @@
-import time
 import os
 import pathlib
 from dataclasses import dataclass, field
@@ -12,15 +11,11 @@ import jax.numpy as jnp
 import numpy
 import matplotlib.pyplot as plt
 
-from cohlib.jax.utils import jax_boilerplate, add0
-from cohlib.jax.dists import naive_estimator
-from cohlib.utils import pickle_save, pickle_open
+from cohlib.utils import jax_boilerplate, add0, pickle_open
 
 import cohlib.confs.utils as conf
 from cohlib.confs.latent.simple import BasicSingleFreq
 from cohlib.confs.obs.gaussian import GaussianObs
-from cohlib.confs.model.simple_lcfg_inherit import LowRankToySimpleM1
-from cohlib.jax.plot import get_eigval, get_eigvec
 
 
 jax_boilerplate()
