@@ -3,8 +3,8 @@ from dataclasses import dataclass
 import jax.numpy as jnp
 import jax.random as jr
 
-from cohlib.jax.dists import LowRankCCN, CCN
-from cohlib.jax.lr_model import rotate_eigvecs
+from cohlib.latent import LowRankCCN, CCN
+from cohlib.utils import rotate_eigvecs
 
 @dataclass
 class BasicSingleFreq:

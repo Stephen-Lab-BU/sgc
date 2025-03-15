@@ -3,7 +3,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 
-from cohlib.jax.observations import _obs_cost_gaussian, _obs_cost_pp_log, _obs_cost_pp_relu
+from cohlib.observations import _obs_cost_gaussian, _obs_cost_pp_log, _obs_cost_pp_relu
 
 # deprecate
 # TODO Rename to 'Laplace approx' and clarify 

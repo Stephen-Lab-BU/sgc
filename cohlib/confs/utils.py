@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from omegaconf import OmegaConf
 
 from cohlib.confs.latent.simple import create_lrccn_basic_rank1, create_ccn_basic_fullrank
-from cohlib.jax.dists import naive_estimator
+from cohlib.utils import naive_estimator
 
 # Paths are structured as:
 # Data/LatentType/Window/K/L/LatentSeed/ObsType/ObsParams/ObsSeed/

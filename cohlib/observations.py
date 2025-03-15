@@ -2,7 +2,7 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 
-from cohlib.jax.utils import add0
+from cohlib.utils import add0
 
 # TODO write classes for observation dist and move functionality here to methods
 

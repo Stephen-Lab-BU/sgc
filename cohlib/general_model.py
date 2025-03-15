@@ -5,8 +5,8 @@ import jax
 import jax.random as jr
 import jax.numpy as jnp
 
-from cohlib.jax.optim import JaxOptim
-from cohlib.jax.latent import LowRankCCN, CCN
+from cohlib.optim import JaxOptim
+from cohlib.latent import LowRankCCN, CCN
 
 # TODO make this actually useful or discard
 class LatentFourierModel(ABC):
