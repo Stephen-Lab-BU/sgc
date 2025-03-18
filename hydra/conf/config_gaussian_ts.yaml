@@ -1,0 +1,12 @@
+defaults: 
+  - latent: full10_testri
+  - obs: gaussian_obs
+  - model: full_support
+
+latent:
+  scale_off_diag: 1
+
+model:
+  ts_method: 'oldmod'
+  init: 'true-init'
+  true_to_flat: 'target'

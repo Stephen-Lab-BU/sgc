@@ -1,0 +1,17 @@
+defaults: 
+  - latent: full10
+  - obs: pp_relu
+  - model: full_support
+
+latent:
+  scale: 10000
+  scale_off_diag: 3
+
+model:
+  inverse_correction: true
+  init: 'empirical-init'
+  # init: 'empirical-diag-init'
+  # init: 'true-init'
+  # scale_init: 10000
+  # true_to_flat: 'target'
+  # init_mod: 0.01

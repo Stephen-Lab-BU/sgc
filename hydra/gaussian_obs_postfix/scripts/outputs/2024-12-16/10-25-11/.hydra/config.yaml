@@ -1,0 +1,27 @@
+latent:
+  gamma: k3-chlg3-gaussian-rank1-nz9
+  scale: 1
+  scale_off_diag: 1
+  freq_low: 1
+  freq_high: 50
+  scale_power_target: 1
+  scale_power_offtarget: 1
+  L: 50
+  seed: 7
+  sel_nz: 9
+obs:
+  obs_type: gaussian
+  ov1: 1
+  ov2: -3
+  seed: 7
+model:
+  init: flat-init
+  init_mod: 1
+  maxiter: 10
+  emiters: 10
+  scale_init: 10000
+  support: null
+  track_mus: true
+  m_step_option: standard
+  m_step_rank: null
+  ts_flag: null

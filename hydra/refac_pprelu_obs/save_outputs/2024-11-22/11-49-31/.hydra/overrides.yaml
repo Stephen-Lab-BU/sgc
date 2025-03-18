@@ -1,0 +1,8 @@
+- latent.gamma=k3-chlg3-rank1-nz9
+- latent.L=10
+- model.maxiter=25
+- model.support=[9,9]
+- model.emiters=50
+- model.init=flat-init
+- model.scale_init=10000000
+- obs.alpha=25

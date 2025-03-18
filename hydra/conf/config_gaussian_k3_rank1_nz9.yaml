@@ -1,0 +1,18 @@
+defaults: 
+  - latent: k3_temp
+  - obs: gaussian
+  - model: full_support
+  - _self_
+
+latent:
+  gamma: 'k3-chlg3-gaussian-rank1-nz9'
+  scale: 1
+  scale_off_diag: 1
+
+model:
+  init: 'flat-init'
+  scale_init: 10000
+  # init: 'empirical-diag-init'
+  # init: 'true-init'
+  # true_to_flat: 'target'
+  # init_mod: 0.01

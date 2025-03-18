@@ -1,0 +1,28 @@
+latent:
+  gamma: k10-chlg3-rank1-nz9
+  scale: 1
+  scale_off_diag: 1
+  freq_low: 1
+  freq_high: 50
+  scale_power_target: 1
+  scale_power_offtarget: 1
+  L: 25
+  seed: 7
+  sel_nz: 9
+obs:
+  obs_type: pp_relu
+  alpha: 25
+  delta: 0.001
+  seed: 7
+  threshold_obs: false
+model:
+  init: empirical-init
+  init_mod: 1
+  maxiter: 25
+  emiters: 50
+  scale_init: 10000
+  support:
+  - 9
+  - 9
+  track_mus: true
+  m_step_mod: none

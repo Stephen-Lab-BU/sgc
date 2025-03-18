@@ -1,0 +1,4 @@
+obs_type: 'gaussian'
+ov1: 1
+ov2: -3
+seed: 7

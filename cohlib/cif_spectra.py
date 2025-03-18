@@ -1,16 +1,16 @@
-import numpy as np
+import numpy as jnp
 def lognormal_cov(mu, Sigma):
     D = Sigma.shape[0]
-    Sigma_ln = np.zeros_like(Sigma)
+    Sigma_ln = jnp.zeros_like(Sigma)
     for i in range(D):
         for j in range(D):
-            sig_ij = np.exp(mu[i] + mu[j] + 0.5*(Sigma[i,i] + Sigma[j,j])) * (np.exp(Sigma[i,j]) - 1)
+            sig_ij = jnp.exp(mu[i] + mu[j] + 0.5*(Sigma[i,i] + Sigma[j,j])) * (jnp.exp(Sigma[i,j]) - 1)
             Sigma_ln[i,j] = sig_ij
 
     return Sigma_ln
 
 
-def log_link_spectrum(alpha, Gamma):
+def log_link_spectrum(mu, Gamma):
     # convert Gamma to full real
     # construct W mat
     # calculate Sigma_x
