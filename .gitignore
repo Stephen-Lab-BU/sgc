@@ -20,5 +20,6 @@ experiments/deprecated
 *.bash.e*
 *.bash.o*
 experiments/scripts/outputs
+experiments/scripts/archive
 scratch.ipynb
 __pycache__
