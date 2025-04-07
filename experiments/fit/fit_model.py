@@ -78,7 +78,8 @@ def run(cfg: Config) -> None:
                         'obs': obs}
             if mcfg.model_type == 'simple_inherit_latent_lowrank_eigh':
                 init_params['rank'] = mcfg.model_rank
-            elif mcfg.model_type == 'simple_inherit_latent_fullrank':
+            elif mcfg.model_type == 'simple_inherit_latent_fullrank' \
+                or mcfg.model_type == 'simple_inherit_latent_fullrank_pinv':
                 init_params['rank'] = K
             else:
                 raise NotImplementedError
@@ -129,8 +130,12 @@ def get_model_object(mcfg, init_params, obs_type, obs_params):
 
     elif mcfg.model_type == 'simple_inherit_latent_fullrank':
         gamma_init = conf.create_fullrank_gamma(mcfg.model_init, init_params)
-
         ccn_init = CCN(gamma_init, freqs, nz_model)
+
+    elif mcfg.model_type == 'simple_inherit_latent_fullrank_pinv':
+        print('Using pinv to compute inverse gamma')
+        gamma_init = conf.create_fullrank_gamma(mcfg.model_init, init_params)
+        ccn_init = CCN(gamma_init, freqs, nz_model, inv_flag="pinv")
 
     else:
         raise NotImplementedError
