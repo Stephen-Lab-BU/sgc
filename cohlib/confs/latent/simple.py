@@ -35,7 +35,7 @@ class BasicSingleFreqLog(BasicSingleFreq):
     latent_type: str = 'basic_single_log'
     scale_power_target: float = 1.0e6
 
-def create_lrccn_basic_rank1(lcfg, print_seed=True):
+def create_lrccn_basic_rank1(lcfg, print_seed=False):
     K = lcfg.K
     N = lcfg.num_freqs
     target_freq_ind = lcfg.target_freq_ind
