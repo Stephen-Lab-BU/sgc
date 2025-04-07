@@ -10,7 +10,7 @@ from omegaconf import MISSING
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
-from cohlib.utils import jax_boilerplate, naive_estimator, pickle_open
+from cohlib.utils import jax_boilerplate, naive_estimator, pickle_open, rotate_eigvecs
 
 import cohlib.confs.utils as conf
 from cohlib.confs.latent.simple import BasicSingleFreq, BasicSingleFreqReLU, BasicSingleFreqLog
@@ -20,25 +20,6 @@ from cohlib.plot import get_eigvec
 
 
 jax_boilerplate()
-
-def rotate_eigvecs(eigvecs):
-    """
-    Args:
-        eigvecs: J x K x R
-    """
-
-    J = eigvecs.shape[0]
-    R = eigvecs.shape[2]
-
-    rotated = jnp.zeros_like(eigvecs)
-
-    for j in range(J):
-        thetas = jnp.angle(eigvecs[j,0,:])
-        rotations = jnp.exp(-1j*thetas)
-
-        rotated = rotated.at[j,:,:].set(eigvecs[j,:,:] * rotations[None,:])
-    
-    return rotated
 
 def mod_config(cfg, L, theta):
     cfg.latent.L = L
@@ -125,9 +106,9 @@ def plot(cfg: Config):
             plot_data[t,l] = {}
             plot_data[t,l]['eigvec_true'] = lrccn_true.eigvecs[0,:,eigrank-1]
             if cfg.plot.rotate is True:
-                eigvecs_em = jnp.stack([rotate_eigvecs(x.eigvecs)[0,:,eigrank-1] for x in res['track']['lrccn']])
+                eigvecs_em = jnp.stack([rotate_eigvecs(x.eigvecs)[0,:,eigrank-1] for x in res['track']['ccn']])
             else:
-                eigvecs_em = jnp.stack([x.eigvecs[0,:,eigrank-1] for x in res['track']['lrccn']])
+                eigvecs_em = jnp.stack([x.eigvecs[0,:,eigrank-1] for x in res['track']['ccn']])
             plot_data[t,l]['eigvecs_em'] = eigvecs_em
 
             # load zs data and compute oracle est

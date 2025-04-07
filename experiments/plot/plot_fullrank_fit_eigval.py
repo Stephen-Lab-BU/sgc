@@ -21,7 +21,7 @@ from cohlib.plot import get_eigval
 
 jax_boilerplate()
 
-def get_eigvals(ccn):
+def get_ccn_fullrank_eigvals(ccn):
     """
     ccn.gamma shape (J x K x K)
     """
@@ -113,7 +113,7 @@ def plot(cfg: Config):
             lrccn_true = conf.create_lrccn_basic_rank1(cfg.latent)
             plot_data[t,l] = {}
             plot_data[t,l]['eigval_true'] = lrccn_true.eigvals[0,eigrank-1]
-            eigvals_em = jnp.stack([get_eigvals(x)[0,eigrank-1] for x in res['track']['ccn']])
+            eigvals_em = jnp.stack([get_ccn_fullrank_eigvals(x)[0,eigrank-1] for x in res['track']['ccn']])
             plot_data[t,l]['eigvals_em'] = eigvals_em
 
             # load zs data and compute oracle est

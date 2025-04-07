@@ -21,7 +21,7 @@ from cohlib.plot import get_eigvec
 
 jax_boilerplate()
 
-def get_eigvecs(ccn):
+def get_ccn_fullrank_eigvecs(ccn):
     """
     ccn.gamma shape (J x K x K)
     """
@@ -135,9 +135,9 @@ def plot(cfg: Config):
             plot_data[t,l] = {}
             plot_data[t,l]['eigvec_true'] = lrccn_true.eigvecs[0,:,eigrank-1]
             if cfg.plot.rotate is True: 
-                eigvecs_em = jnp.stack([rotate_eigvecs(get_eigvecs(x))[0,:,eigrank-1] for x in res['track']['ccn']])
+                eigvecs_em = jnp.stack([rotate_eigvecs(get_ccn_fullrank_eigvecs(x))[0,:,eigrank-1] for x in res['track']['ccn']])
             else:
-                eigvecs_em = jnp.stack([get_eigvecs(x)[0,:,eigrank-1] for x in res['track']['ccn']])
+                eigvecs_em = jnp.stack([get_ccn_fullrank_eigvecs(x)[0,:,eigrank-1] for x in res['track']['ccn']])
             plot_data[t,l]['eigvecs_em'] = eigvecs_em
 
             # load zs data and compute oracle est
