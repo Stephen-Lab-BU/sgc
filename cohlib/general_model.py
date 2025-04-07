@@ -28,9 +28,11 @@ class LatentFourierModel(ABC):
         pass
 
 class GeneralToyModel(LatentFourierModel):
-    def __init__(self, track_params=True):
-        self.track = {'ccn': []}
+    # def __init__(self, track_params=True):
+    def __init__(self, track_params=True, track_qfunc=True):
+        self.track = {'ccn': [], 'alphas': [], 'Upss': []}
         self.track_ccn = track_params
+        self.track_qfunc = track_qfunc
 
     def initialize_latent(self, ccn):
         self.ccn = ccn
@@ -88,6 +90,9 @@ class GeneralToyModel(LatentFourierModel):
             alphas, Upss = optimizer.run_e_step_par()
             self.alphas = alphas
             self.Upss = Upss
+            if self.track_qfunc is True:
+                self.track['alphas'].append(alphas)
+                self.track['Upss'].append(Upss)
 
             alphas_outer = jnp.einsum('nkl,nil->nkil', alphas, alphas.conj())
 
