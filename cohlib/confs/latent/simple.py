@@ -7,6 +7,15 @@ from cohlib.latent import LowRankCCN, CCN
 from cohlib.utils import rotate_eigvecs
 
 @dataclass
+class AppFullRankSingleFreq:
+    latent_type: str = 'app_single_fullrank'
+    num_freqs: int = 5000 # assuming 1 second window 
+    # target_freq_inds: List[int] = field(default_factory=lambda: [9])
+    target_freq_ind: int = 14
+    K: int = 10
+    L: int = 50
+
+@dataclass
 class BasicSingleFreq:
     latent_type: str = 'basic_single'
     K: int = 3
@@ -35,12 +44,12 @@ class BasicSingleFreqLog(BasicSingleFreq):
     latent_type: str = 'basic_single_log'
     scale_power_target: float = 1.0e6
 
-def create_lrccn_basic_rank1(lcfg, print_seed=False):
+def create_lrccn_basic_rank1(lcfg, delta=1e-3, print_seed=False):
     K = lcfg.K
     N = lcfg.num_freqs
     target_freq_ind = lcfg.target_freq_ind
     gamma_seed = lcfg.gamma_seed
-    freqs = jnp.arange(N)
+    freqs = jnp.fft.rfftfreq(2*N, delta)[1:]
     R = lcfg.rank
 
     scale_target = lcfg.scale_power_target

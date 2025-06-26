@@ -4,9 +4,42 @@ from omegaconf import MISSING
 from hydra.core.config_store import ConfigStore
 
 
-from .latent import BasicSingleFreq, BasicSingleFreqLog, BasicSingleFreqReLU
-from .obs import GaussianObs, PPLogObs, PPReluObs
+from .app import AppRat15
+from .latent import BasicSingleFreq, BasicSingleFreqLog, BasicSingleFreqReLU, AppFullRankSingleFreq
+from .obs import GaussianObs, PPLogObs, PPReluObs, AppPPLogObs
 from .model import LowRankToySimpleM1, FullRankToySimple, FullRankToyPseudoInv
+
+def register_app_configs() -> None:
+    cs = ConfigStore.instance()
+    cs.store(group='app', name='appdata_rat15', node=AppRat15)
+    cs.store(group='latent', name='app_fullrank_single_freq', node=AppFullRankSingleFreq)
+    cs.store(group='obs', name='app_pp_log', node=AppPPLogObs)
+    cs.store(group='model', name='lowrank_eigh', node=LowRankToySimpleM1)
+    cs.store(group='model', name='fullrank', node=FullRankToySimple)
+    cs.store(group='model', name='fullrank_pinv', node=FullRankToyPseudoInv)
+
+def get_app_config():
+    register_app_configs()
+
+    defaults = [
+        {"app": "appdata_rat15"},
+        {"latent": "app_fullrank_single_freq"},
+        {"obs": "app_pp_log"},
+        {"model": "fullrank_pinv"}
+    ]
+
+    @dataclass 
+    class AppConfig:
+        defaults: List[Any] = field(default_factory=lambda: defaults)
+        app: Any = MISSING
+        latent: Any = MISSING
+        obs: Any = MISSING
+        model: Any = MISSING
+
+    cs = ConfigStore.instance()
+    cs.store("config", node=AppConfig)
+    
+    return AppConfig
 
 def register_configs() -> None:
     cs = ConfigStore.instance()
@@ -46,7 +79,8 @@ def get_fit_config():
     defaults = [
         {"latent": "single_freq_log"},
         {"obs": "pp_log"},
-        {"model": "lowrank_eigh"}
+        # {"model": "lowrank_eigh"}
+        {"model": "fullrank"}
     ]
 
     @dataclass 

@@ -188,7 +188,7 @@ def get_e_step_cost_func(trial_data, gamma_prev_inv, params, obs_type):
             obs_cost_func = _obs_cost_gaussian
         elif obs_type == 'pp_relu':
             obs_cost_func = _obs_cost_pp_relu
-        elif obs_type == 'pp_log':
+        elif obs_type == 'pp_log' or obs_type == 'app_pp_log':
             obs_cost_func = _obs_cost_pp_log
         else:
             return NotImplementedError

@@ -3,6 +3,7 @@ import jax.numpy as jnp
 from omegaconf import OmegaConf
 
 from cohlib.confs.latent.simple import create_lrccn_basic_rank1, create_ccn_basic_fullrank
+from cohlib.confs.app.rat_ansesthesia import load_app_data
 from cohlib.utils import naive_estimator
 
 # Paths are structured as:
@@ -22,7 +23,7 @@ def get_latent_dir(lcfg):
     else:
         rank_name = f'rank{lcfg.rank}'
 
-    latent_dir = f'data/latent-{lcfg.latent_type}_{rank_name}/window{window}/gseed{lcfg.gamma_seed}/K{lcfg.K}/L{lcfg.L}/lseed{lcfg.seed}'
+    latent_dir = f'data/latent-{lcfg.latent_type}_{rank_name}/scale{int(lcfg.scale_power_target)}/window{window}/gseed{lcfg.gamma_seed}/K{lcfg.K}/L{lcfg.L}/lseed{lcfg.seed}'
 
     return latent_dir
 
@@ -36,6 +37,43 @@ def get_obs_dir(ocfg, latent_dir):
 
     obs_dir = os.path.join(latent_dir, obs_subdir)
     return obs_dir
+
+def get_app_dir(acfg):
+    app_dir = f'data/app/{acfg.data_name}/{acfg.exp_type}/'
+    return app_dir
+
+def get_app_latent_dir(lcfg, app_dir):
+    window = int(2*lcfg.num_freqs)
+
+    latent_subdir = f'latent-{lcfg.latent_type}/window{window}/K{lcfg.K}/L{lcfg.L}/'
+    latent_dir = os.path.join(app_dir, latent_subdir)
+
+    return latent_dir
+
+def get_app_obs_dir(ocfg, latent_dir):
+    if ocfg.obs_type == 'app_pp_log':
+        obs_subdir = f'obs-{ocfg.obs_type}/mu-{ocfg.mu_option}/'
+    else:
+        raise NotImplementedError
+
+    obs_dir = os.path.join(latent_dir, obs_subdir)
+    return obs_dir
+
+def get_app_obs_params(ocfg, obs):
+    obs_type = ocfg.obs_type
+    if obs_type == 'app_pp_log':
+        if ocfg.mu_option == 'empirical':
+            mu = get_app_mus_empirical(obs)
+            obs_params = {'mu': mu, 'mu_type': 'vec', 'delta': ocfg.delta}
+        else:
+            raise NotImplementedError
+    else:
+        raise ValueError
+    
+    return obs_params, obs_type
+
+def get_app_mus_empirical(obs):
+    return jnp.log(1000*obs.mean((0,2)))
 
 def get_model_subdir(mcfg):
     if mcfg.inherit_lcfg is True:
@@ -169,7 +207,7 @@ def create_fullrank_gamma(value_type, params):
         ocfg = params['ocfg']
         obs_type = ocfg.obs_type
         obs = params['obs']
-        if obs_type in ['pp_relu', 'pp_log']:
+        if obs_type in ['pp_relu', 'pp_log', 'app_pp_log']:
             gamma_empirical = naive_estimator(obs, nz_model) * 1e6
         elif obs_type == 'gaussian':
             gamma_empirical = naive_estimator(obs, nz_model) 
