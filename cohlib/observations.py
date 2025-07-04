@@ -197,7 +197,10 @@ def _obs_cost_pp_log(z, data, K, N, nonzero_inds, params):
     zs_0dc = jnp.apply_along_axis(add0, 0, zs)
     xs = jnp.fft.irfft(zs_0dc, axis=0)
 
-    log_lams = xs + mu[None,:]
+    if type(mu) == float:
+        log_lams = xs + mu
+    else:
+        log_lams = xs + mu[None,:]
     lams = jnp.exp(log_lams)
 
     obs_ll_calc = data*(jnp.log(delta) + log_lams) - lams*delta

@@ -7,6 +7,7 @@ import jax.numpy as jnp
 
 from cohlib.optim import JaxOptim
 from cohlib.latent import LowRankCCN, CCN
+from cohlib.low_rank import m_step_factor, m_step_strictlr, m_step_strictlrmk, m_step_factormk, m_step_factor_frobpen, m_step_factor_anucpen, m_step_factor_igprior, m_step_factor_igprior_anucpen
 
 # TODO make this actually useful or discard
 class LatentFourierModel(ABC):
@@ -67,6 +68,31 @@ class GeneralToyModel(LatentFourierModel):
 
         if m_step_option == 'low-rank-eigh':
             self.m_step = m_step_lowrank_eigh
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factor':
+            self.m_step = m_step_testing_factor
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factor-igprior':
+            self.m_step = m_step_testing_factor_igprior
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factor-igprior-anucpen':
+            self.m_step = m_step_testing_factor_igprior_anucpen
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factormk':
+            self.m_step = m_step_testing_factormk
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factor-frobpen':
+            self.m_step = m_step_testing_factor_frobpen
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-factor-anucpen':
+            self.m_step = m_step_testing_factor_anucpen
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-strictlr':
+            self.m_step = m_step_testing_strictlr
+            self.m_step_params = m_step_params
+            self.m_step_params = m_step_params
+        elif m_step_option == 'testing-strictlrmk':
+            self.m_step = m_step_testing_strictlrmk
             self.m_step_params = m_step_params
         elif m_step_option == 'full-rank-standard':
             self.m_step = m_step_fullrank
@@ -155,3 +181,27 @@ def m_step_lowrank_eigh(alphas_outer, Upss, params):
 
         return eigvals_update, eigvecs_update
 
+rank = 5
+def m_step_testing_factor(alphas_outer, Upss, params):
+    return m_step_factor(alphas_outer, Upss, rank)
+
+def m_step_testing_factor_igprior(alphas_outer, Upss, params):
+    return m_step_factor_igprior(alphas_outer, Upss, rank)
+
+def m_step_testing_factor_igprior_anucpen(alphas_outer, Upss, params):
+    return m_step_factor_igprior_anucpen(alphas_outer, Upss, rank)
+
+def m_step_testing_factormk(alphas_outer, Upss, params):
+    return m_step_factormk(alphas_outer, Upss, rank)
+
+def m_step_testing_factor_frobpen(alphas_outer, Upss, params):
+    return m_step_factor_frobpen(alphas_outer, Upss, rank)
+
+def m_step_testing_factor_anucpen(alphas_outer, Upss, params):
+    return m_step_factor_anucpen(alphas_outer, Upss, rank)
+
+def m_step_testing_strictlr(alphas_outer, Upss, params):
+    return m_step_strictlr(alphas_outer, Upss, rank)
+
+def m_step_testing_strictlrmk(alphas_outer, Upss, params):
+    return m_step_strictlrmk(alphas_outer, Upss, rank)
