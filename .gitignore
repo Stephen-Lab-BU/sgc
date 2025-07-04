@@ -12,11 +12,15 @@ hydra/gaussian_obs_postfix/scripts/outputs
 hydra/pp_log_obs/batch
 hydra/pp_log_obs/outputs
 experiments/outputs
+experiments/saved_notebooks
 experiments/fit/outputs
 experiments/simulate/outputs
 experiments/plot/outputs
 experiments/data
 experiments/deprecated
+experiments/poster_figures
+experiments/lr_figures
+*.nwb
 *.bash.e*
 *.bash.o*
 experiments/scripts/outputs
